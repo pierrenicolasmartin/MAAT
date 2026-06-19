@@ -1,0 +1,21 @@
+<Window x:Class="MAAT.App.Views.BusyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:MAAT.App.Localization"
+        Title="MAAT" Width="420" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
+    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1" CornerRadius="8" Padding="28,24" Effect="{DynamicResource GlowSoft}">
+        <StackPanel>
+            <TextBlock x:Name="TitleText" Style="{StaticResource H3}" Text="Export en cours" />
+            <TextBlock x:Name="MessageText" Style="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap"
+                       Text="{l:Loc Busy_Wait}" />
+            <ProgressBar Height="4" Margin="0,18,0,0" IsIndeterminate="True" />
+            <TextBlock Style="{StaticResource Muted}" Margin="0,10,0,0" FontSize="11.5"
+                       Text="{l:Loc Busy_BigHint}" />
+        </StackPanel>
+    </Border>
+</Window>

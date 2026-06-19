@@ -1,0 +1,47 @@
+<Window x:Class="MAAT.App.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:MAAT.App.Localization"
+        Title="{l:Loc About_WinTitle}"
+        Width="460" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Icon="pack://application:,,,/MAAT.App;component/Assets/maat.ico"
+        Background="{DynamicResource BgBrush}">
+    <StackPanel>
+        <!-- En-tête : logo texte transparent sur fond de carte -->
+        <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1" Padding="24,20">
+            <Image Source="{DynamicResource LogoTexteImage}" Width="300" Stretch="Uniform"
+                   HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
+        </Border>
+
+        <!-- Corps -->
+        <StackPanel Margin="24,20,24,16">
+            <TextBlock Style="{StaticResource Muted}" Text="{Binding}" x:Name="VersionText" />
+            <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}"
+                       Text="{l:Loc About_Tagline}" />
+
+            <Border Margin="0,16,0,0" Background="{DynamicResource BgBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="14,11">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="{l:Loc About_License}" />
+                    <TextBlock Margin="0,5,0,0" Style="{StaticResource Muted}" TextWrapping="Wrap">
+                        <Run Text="{l:Loc About_LicenseBody}" /><Hyperlink
+                            NavigateUri="https://www.gnu.org/licenses/gpl-3.0.html"
+                            RequestNavigate="OnNavigate"
+                            Foreground="{DynamicResource AccentBrush}">www.gnu.org/licenses/gpl-3.0.html</Hyperlink>
+                    </TextBlock>
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource Muted}" TextWrapping="Wrap"
+                               Text="{l:Loc About_Warranty}" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Margin="0,14,0,0" Style="{StaticResource Muted}" Text="© 2026 Pierre-Nicolas MARTIN" />
+        </StackPanel>
+
+        <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0" Padding="16,12">
+            <Button HorizontalAlignment="Right" Content="{l:Loc Common_Close}" Padding="20,8" IsCancel="True" Click="OnClose" />
+        </Border>
+    </StackPanel>
+</Window>

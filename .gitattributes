@@ -1,0 +1,22 @@
+# Normalisation des fins de ligne : LF dans le dépôt, conversion automatique au checkout.
+* text=auto
+
+# Sources et textes : toujours LF dans le dépôt.
+*.cs    text eol=lf
+*.xaml  text eol=lf
+*.csproj text eol=lf
+*.sln   text eol=crlf
+*.md    text eol=lf
+*.txt   text eol=lf
+*.json  text eol=lf
+*.html  text eol=lf
+*.js    text eol=lf
+*.wxs   text eol=lf
+*.wxl   text eol=lf
+
+# Fichiers binaires : jamais de conversion.
+*.png   binary
+*.ico   binary
+*.ttf   binary
+*.rtf   binary
+*.msi   binary

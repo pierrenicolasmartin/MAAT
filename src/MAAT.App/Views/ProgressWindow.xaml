@@ -1,0 +1,41 @@
+<Window x:Class="MAAT.App.Views.ProgressWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:MAAT.App.Localization"
+        Title="Audit en cours — MAAT"
+        Width="580" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        Icon="pack://application:,,,/MAAT.App;component/Assets/maat.ico"
+        Background="{DynamicResource BgBrush}"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
+    <Border Padding="28,26">
+        <StackPanel>
+            <TextBlock Style="{StaticResource H1}" Text="{l:Loc Prog_Title}" />
+            <TextBlock Style="{StaticResource Mono}" Margin="0,12,0,0" Foreground="{DynamicResource MutedBrush}"
+                       TextWrapping="Wrap" Text="{Binding RootPath}" />
+            <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0" Text="{Binding ParametersText}" />
+
+            <!-- Progression globale -->
+            <Grid Margin="0,24,0,7">
+                <TextBlock Style="{StaticResource Label}" Text="{l:Loc Prog_Global}" VerticalAlignment="Center" />
+                <TextBlock FontWeight="SemiBold" FontSize="14" HorizontalAlignment="Right" Foreground="{DynamicResource AccentBrush}"
+                           Text="{Binding GlobalPercentText}" VerticalAlignment="Center" />
+            </Grid>
+            <ProgressBar Minimum="0" Maximum="100" Value="{Binding GlobalPercent, Mode=OneWay}" />
+            <Grid Margin="0,6,0,0">
+                <TextBlock Style="{StaticResource Muted}" FontSize="11.5" Text="{Binding ElapsedText}" />
+                <TextBlock Style="{StaticResource Muted}" FontSize="11.5" HorizontalAlignment="Right" Text="{Binding EtaText}" />
+            </Grid>
+
+            <!-- Étape en cours -->
+            <TextBlock Margin="0,18,0,7" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold"
+                       Text="{Binding PhaseLabel}" />
+            <ProgressBar Minimum="0" Maximum="100" Value="{Binding StepPercent, Mode=OneWay}"
+                         IsIndeterminate="{Binding StepIndeterminate, Mode=OneWay}" />
+            <TextBlock Style="{StaticResource Muted}" Margin="0,8,0,0" TextTrimming="CharacterEllipsis" Text="{Binding StatusText}" />
+
+            <Button HorizontalAlignment="Right" Margin="0,22,0,0" Style="{StaticResource GhostButton}"
+                    Content="{l:Loc Common_Cancel}" Command="{Binding CancelCommand}" />
+        </StackPanel>
+    </Border>
+</Window>

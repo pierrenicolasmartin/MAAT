@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A87830B9-5901-42F4-8848-82056BAB8864}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MAAT.Core", "src\MAAT.Core\MAAT.Core.csproj", "{0EE5E0E6-04C8-401F-A608-CAEB826479A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MAAT.Storage", "src\MAAT.Storage\MAAT.Storage.csproj", "{FDE4E7BA-9DAC-429E-A9EC-D8E02D0496E2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MAAT.Export", "src\MAAT.Export\MAAT.Export.csproj", "{7F720569-A3B0-4B0A-A5DC-34C624879127}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MAAT.App", "src\MAAT.App\MAAT.App.csproj", "{320474B8-1803-4CF1-8DA5-0ACD2E4BF001}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0EE5E0E6-04C8-401F-A608-CAEB826479A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0EE5E0E6-04C8-401F-A608-CAEB826479A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0EE5E0E6-04C8-401F-A608-CAEB826479A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0EE5E0E6-04C8-401F-A608-CAEB826479A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDE4E7BA-9DAC-429E-A9EC-D8E02D0496E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDE4E7BA-9DAC-429E-A9EC-D8E02D0496E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDE4E7BA-9DAC-429E-A9EC-D8E02D0496E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDE4E7BA-9DAC-429E-A9EC-D8E02D0496E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F720569-A3B0-4B0A-A5DC-34C624879127}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F720569-A3B0-4B0A-A5DC-34C624879127}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F720569-A3B0-4B0A-A5DC-34C624879127}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F720569-A3B0-4B0A-A5DC-34C624879127}.Release|Any CPU.Build.0 = Release|Any CPU
+		{320474B8-1803-4CF1-8DA5-0ACD2E4BF001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{320474B8-1803-4CF1-8DA5-0ACD2E4BF001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{320474B8-1803-4CF1-8DA5-0ACD2E4BF001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{320474B8-1803-4CF1-8DA5-0ACD2E4BF001}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0EE5E0E6-04C8-401F-A608-CAEB826479A3} = {A87830B9-5901-42F4-8848-82056BAB8864}
+		{FDE4E7BA-9DAC-429E-A9EC-D8E02D0496E2} = {A87830B9-5901-42F4-8848-82056BAB8864}
+		{7F720569-A3B0-4B0A-A5DC-34C624879127} = {A87830B9-5901-42F4-8848-82056BAB8864}
+		{320474B8-1803-4CF1-8DA5-0ACD2E4BF001} = {A87830B9-5901-42F4-8848-82056BAB8864}
+	EndGlobalSection
+EndGlobal

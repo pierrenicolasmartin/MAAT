@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Installeur MSI MULTILINGUE de MAAT (WiX v5).
+     Construire avec build.ps1 (génère un MSI base en-US + transform fr-FR
+     embarqué ; Windows Installer sélectionne automatiquement la langue du
+     système, repli en anglais). Les chaînes sont localisées via Strings.*.wxl. -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="MAAT"
+           Manufacturer="Pierre-Nicolas MARTIN"
+           Version="1.0.0.0"
+           ProductCode="C1D2E3F4-5A6B-47C8-9E0F-1A2B3C4D5E6F"
+           UpgradeCode="B2A4F7C0-3D1E-4A9B-9C2F-7E6D5A1B0C34"
+           Scope="perMachine"
+           Language="$(ProductLang)"
+           Codepage="1252"
+           Compressed="yes">
+
+    <SummaryInformation Description="!(loc.ProductDesc)" />
+
+    <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeMsg)" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Icône (raccourcis + Programmes et fonctionnalités) -->
+    <Icon Id="MaatIcon" SourceFile="..\ressources\Icons\maat.ico" />
+    <Property Id="ARPPRODUCTICON" Value="MaatIcon" />
+    <Property Id="ARPHELPLINK" Value="https://www.gnu.org/licenses/gpl-3.0.html" />
+    <Property Id="ARPCONTACT" Value="Pierre-Nicolas MARTIN" />
+
+    <!-- Assistant d'installation : licence (RTF par langue) + choix du dossier -->
+    <WixVariable Id="WixUILicenseRtf" Value="$(LicenseRtf)" />
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+
+    <!-- Arborescence d'installation -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="MAAT" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuFolder" Name="MAAT" />
+    </StandardDirectory>
+
+    <!-- Fichiers de l'application -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Component Id="MainExe" Guid="*">
+        <File Id="MaatAppExe" Source="..\publish\win-x64\MAAT.App.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="LicenseFile" Guid="*">
+        <File Id="LicenseTxt" Source="LICENSE.txt" KeyPath="yes" />
+      </Component>
+      <!-- Association .maat : icône dédiée + ouverture par double-clic -->
+      <Component Id="FileAssoc" Guid="*">
+        <File Id="MaatFileIco" Source="..\ressources\Icons\maat_file.ico" KeyPath="yes" />
+        <ProgId Id="MAAT.Project" Description="!(loc.ProgIdDesc)" Icon="MaatFileIco" IconIndex="0">
+          <Extension Id="maat" ContentType="application/x-maat">
+            <Verb Id="open" Command="!(loc.VerbOpen)" TargetFile="MaatAppExe" Argument="&quot;%1&quot;" />
+          </Extension>
+        </ProgId>
+        <!-- Lie explicitement l'extension au ProgId (liste « Ouvrir avec ») pour fiabiliser l'association. -->
+        <RegistryValue Root="HKCR" Key=".maat\OpenWithProgids" Name="MAAT.Project" Value="" Type="string" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Raccourci menu Démarrer -->
+    <Component Id="StartMenuShortcut" Directory="AppMenuFolder" Guid="*">
+      <Shortcut Id="StartMenuMaat" Name="MAAT"
+                Target="[INSTALLFOLDER]MAAT.App.exe" WorkingDirectory="INSTALLFOLDER"
+                Icon="MaatIcon" />
+      <RemoveFolder Id="RemoveAppMenuFolder" Directory="AppMenuFolder" On="uninstall" />
+      <RegistryValue Root="HKMU" Key="Software\MAAT" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- Raccourci bureau -->
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="*">
+      <Shortcut Id="DesktopMaat" Name="MAAT"
+                Target="[INSTALLFOLDER]MAAT.App.exe" WorkingDirectory="INSTALLFOLDER"
+                Icon="MaatIcon" />
+      <RegistryValue Root="HKMU" Key="Software\MAAT" Name="Desktop" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- Fonctionnalité unique -->
+    <Feature Id="Main" Title="MAAT" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+  </Package>
+</Wix>
