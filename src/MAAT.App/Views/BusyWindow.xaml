@@ -1,0 +1,63 @@
+<Window x:Class="MAAT.App.Views.BusyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:MAAT.App.Localization"
+        Title="MAAT" Width="440" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
+
+    <Window.Resources>
+        <!-- Pastille verte translucide de la coche (rgba(160,181,126,.2)) -->
+        <SolidColorBrush x:Key="StepDoneTint" Color="#33A0B57E" />
+    </Window.Resources>
+
+    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1" CornerRadius="8" Padding="28,24" Effect="{DynamicResource GlowSoft}">
+        <StackPanel>
+
+            <!-- En-tête : indicateur d'état (anneau orange → coche verte) + titre/message -->
+            <StackPanel Orientation="Horizontal">
+                <Grid Width="26" Height="26" VerticalAlignment="Top">
+                    <!-- Pendant le travail : anneau creux accent (orange) -->
+                    <Border x:Name="Ring" Width="26" Height="26" CornerRadius="13"
+                            BorderThickness="2" BorderBrush="{DynamicResource AccentBrush}" Background="Transparent" />
+                    <!-- Terminé : pastille verte pleine + coche -->
+                    <Border x:Name="DoneDot" Width="26" Height="26" CornerRadius="13"
+                            Background="{StaticResource StepDoneTint}" Visibility="Collapsed">
+                        <TextBlock Text="✓" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource GreenBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </Grid>
+                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="TitleText" Style="{StaticResource H3}" Text="Export en cours" />
+                    <TextBlock x:Name="MessageText" Style="{StaticResource Muted}" Margin="0,3,0,0" TextWrapping="Wrap"
+                               Text="{l:Loc Busy_Wait}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Barre indéterminée (pendant le travail) -->
+            <ProgressBar x:Name="Bar" Height="4" Margin="0,18,0,0" Background="{DynamicResource BorderStrongBrush}"
+                         IsIndeterminate="True" />
+
+            <!-- Chemin du fichier produit (une fois terminé) -->
+            <TextBlock x:Name="DonePath" Margin="0,14,0,0" Foreground="{DynamicResource MutedBrush}"
+                       FontFamily="{StaticResource Font.Mono}" FontSize="12" TextTrimming="CharacterEllipsis"
+                       Visibility="Collapsed" />
+
+            <!-- Boutons : Annuler (pendant) puis Ouvrir / Ignorer (export terminé) -->
+            <Grid Margin="0,18,0,0">
+                <StackPanel x:Name="CancelRow" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="CancelBtn" Content="{l:Loc Common_Cancel}" Style="{StaticResource GhostButton}"
+                            Padding="22,9" Click="OnCancel" />
+                </StackPanel>
+                <StackPanel x:Name="DoneButtons" Orientation="Horizontal" HorizontalAlignment="Right" Visibility="Collapsed">
+                    <Button x:Name="OpenBtn" Content="{l:Loc Busy_Open}" Padding="22,9" Click="OnOpen" />
+                    <Button x:Name="IgnoreBtn" Content="{l:Loc Common_Close}" Style="{StaticResource GhostButton}"
+                            Padding="22,9" Margin="10,0,0,0" Click="OnIgnore" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

@@ -1,0 +1,38 @@
+MAAT — Monitoring et Audit des Accès pour la Traçabilité
+Copyright (C) 2026  Pierre-Nicolas MARTIN
+Licensed under the GNU General Public License v3 (see LICENSE.txt).
+
+This product bundles third-party components, each under its own license.
+All licenses below are compatible with the GNU GPL v3 for distribution.
+
+────────────────────────────────────────────────────────────────────────
+RUNTIME / LIBRARIES
+────────────────────────────────────────────────────────────────────────
+• .NET 8 runtime & WPF — © Microsoft — MIT License
+  https://github.com/dotnet/runtime  /  https://github.com/dotnet/wpf
+• Microsoft.Data.Sqlite 8.0.10 — © Microsoft — MIT License
+• SQLite engine — Public Domain
+• System.DirectoryServices(.AccountManagement) 8.0.0 — © Microsoft — MIT License
+
+MIT and Public Domain are permissive licenses, compatible with the GPLv3
+(per the FSF license list, https://www.gnu.org/licenses/license-list.html).
+
+────────────────────────────────────────────────────────────────────────
+EMBEDDED FONTS — SIL Open Font License 1.1 (OFL)
+────────────────────────────────────────────────────────────────────────
+• Hanken Grotesk — © Alfredo Marco Pradil / Hanken Design Co. (https://github.com/hanken-design/hanken-grotesk)
+• Newsreader — © The Newsreader Project Authors / Production Type (https://github.com/productiontype/Newsreader)
+• Geist Mono — © Vercel, Inc. (https://github.com/vercel/geist-font)
+
+The SIL OFL 1.1 is compatible with the GPL; fonts under the OFL may be
+bundled with and distributed alongside GPL software. The full OFL text for
+each family is provided with the font sources and at https://openfontlicense.org:
+  • ressources/Fonts/Hanken_Grotesk/OFL.txt
+  • ressources/Fonts/Newsreader/OFL.txt
+  • ressources/Fonts/Geist_Mono/OFL.txt
+
+────────────────────────────────────────────────────────────────────────
+BUILD TOOLING (not distributed with the program)
+────────────────────────────────────────────────────────────────────────
+• WiX Toolset v5 — Microsoft Reciprocal License (MS-RL) — used only to build
+  the MSI installer; not linked into or shipped inside the application.

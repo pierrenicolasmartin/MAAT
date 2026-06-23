@@ -1,0 +1,235 @@
+<Window x:Class="MAAT.App.Views.GuideWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:MAAT.App.Localization"
+        Title="{l:Loc Guide_WinTitle}"
+        Height="680" Width="980" MinHeight="520" MinWidth="720"
+        WindowStartupLocation="CenterOwner"
+        Icon="pack://application:,,,/MAAT.App;component/Assets/maat.ico"
+        Background="{DynamicResource BgBrush}"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
+
+    <Window.Resources>
+        <!-- ───────── Entrée du sommaire (états inactif / actif) ───────── -->
+        <Style x:Key="TocItem" TargetType="ListBoxItem">
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="b" Background="Transparent" BorderBrush="Transparent"
+                                BorderThickness="1" CornerRadius="6" Padding="11">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="num" Text="{Binding Number}" FontFamily="{StaticResource Font.Mono}"
+                                           FontSize="12" Foreground="{DynamicResource TertiaryBrush}" VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1" Margin="11,0,0,0">
+                                    <TextBlock x:Name="kick" Text="{Binding Kicker}" FontFamily="{StaticResource Font.Mono}"
+                                               FontSize="9.5" Foreground="{DynamicResource TertiaryBrush}" />
+                                    <TextBlock x:Name="ttl" Text="{Binding Title}" FontFamily="{StaticResource Font.Sans}"
+                                               FontSize="14" Foreground="{DynamicResource MutedBrush}" Margin="0,3,0,0"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource Card2Brush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource CardBrush}" />
+                                <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                                <Setter TargetName="num" Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="kick" Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="ttl" Property="Foreground" Value="{DynamicResource TextBrush}" />
+                                <Setter TargetName="ttl" Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ───────── Bouton de navigation (flèche, pied droit) ───────── -->
+        <Style x:Key="NavButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="{TemplateBinding Background}"
+                                BorderBrush="{DynamicResource BorderStrongBrush}" BorderThickness="1" CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="b" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Chevrons vectoriels (nets à toute taille) -->
+        <Style x:Key="NavChevron" TargetType="Path">
+            <Setter Property="Stroke" Value="{DynamicResource TextBrush}" />
+            <Setter Property="StrokeThickness" Value="1.8" />
+            <Setter Property="StrokeStartLineCap" Value="Round" />
+            <Setter Property="StrokeEndLineCap" Value="Round" />
+            <Setter Property="StrokeLineJoin" Value="Round" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="288" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ═════════ Colonne gauche : sommaire ═════════ -->
+        <Border Grid.Column="0" Background="{DynamicResource BgBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+            <DockPanel>
+                <!-- En-tête -->
+                <Border DockPanel.Dock="Top" Padding="26" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                    <StackPanel>
+                        <TextBlock Text="{l:Loc Guide_HdrLabel}" FontFamily="{StaticResource Font.Mono}"
+                                   FontSize="10.5" Foreground="{DynamicResource TertiaryBrush}" />
+                        <TextBlock Text="{l:Loc Guide_HdrTitle}" FontFamily="{StaticResource Font.Serif}"
+                                   FontSize="27" Foreground="{DynamicResource TextBrush}" Margin="0,6,0,0"
+                                   TextOptions.TextFormattingMode="Ideal" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Recherche (pied de colonne) -->
+                <Border DockPanel.Dock="Bottom" Padding="16,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="9,6">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="⌕" Foreground="{DynamicResource TertiaryBrush}" FontSize="15"
+                                       VerticalAlignment="Center" Margin="2,0,8,0" />
+                            <Grid Grid.Column="1">
+                                <TextBox Style="{StaticResource SearchTextBox}"
+                                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="{l:Loc Guide_Search}" Foreground="{DynamicResource TertiaryBrush}"
+                                           FontSize="13" IsHitTestVisible="False" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SearchText}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Border>
+
+                <!-- Liste des sujets -->
+                <ListBox ItemsSource="{Binding Topics}" SelectedItem="{Binding SelectedTopic}"
+                         Background="Transparent" BorderThickness="0" Padding="12,10"
+                         ItemContainerStyle="{StaticResource TocItem}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+            </DockPanel>
+        </Border>
+
+        <!-- ═════════ Colonne droite : détail ═════════ -->
+        <DockPanel Grid.Column="1">
+            <!-- Pied (navigation) -->
+            <Border DockPanel.Dock="Bottom" Background="{DynamicResource HeaderBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="24,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <!-- Groupe de navigation centré : ‹ chevron · pagination · chevron › -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Button Style="{StaticResource NavButton}" IsEnabled="{Binding CanPrev}" Command="{Binding PrevCommand}">
+                            <Path Style="{StaticResource NavChevron}" Data="M 6,0 L 0,7 L 6,14" />
+                        </Button>
+                        <TextBlock Text="{Binding Pagination}" FontFamily="{StaticResource Font.Mono}" FontSize="12.5"
+                                   Foreground="{DynamicResource TertiaryBrush}" VerticalAlignment="Center" Margin="18,0"
+                                   MinWidth="64" TextAlignment="Center" />
+                        <Button Style="{StaticResource NavButton}" IsEnabled="{Binding CanNext}" Command="{Binding NextCommand}">
+                            <Path Style="{StaticResource NavChevron}" Data="M 0,0 L 6,7 L 0,14" />
+                        </Button>
+                    </StackPanel>
+                    <!-- Fermer à droite -->
+                    <Button Grid.Column="2" HorizontalAlignment="Right" Content="{l:Loc Common_Close}" Padding="20,9"
+                            IsCancel="True" Click="OnClose" />
+                </Grid>
+            </Border>
+
+            <!-- Contenu du sujet sélectionné -->
+            <ScrollViewer x:Name="DetailScroll" VerticalScrollBarVisibility="Auto" Padding="48,40">
+                <StackPanel DataContext="{Binding SelectedTopic}">
+                    <TextBlock Text="{Binding DetailKicker}" FontFamily="{StaticResource Font.Mono}" FontSize="11"
+                               Foreground="{DynamicResource AccentBrush}" />
+                    <TextBlock Text="{Binding Title}" FontFamily="{StaticResource Font.Serif}" FontSize="34"
+                               Foreground="{DynamicResource TextBrush}" Margin="0,8,0,0" TextWrapping="Wrap"
+                               TextOptions.TextFormattingMode="Ideal" />
+                    <TextBlock Text="{Binding Intro}" FontFamily="{StaticResource Font.Sans}" FontSize="14.5"
+                               Foreground="{DynamicResource MutedBrush}" Margin="0,16,0,0" MaxWidth="560"
+                               HorizontalAlignment="Left" TextWrapping="Wrap" LineHeight="22" />
+
+                    <ItemsControl ItemsSource="{Binding Sections}" Margin="0,20,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource Card2Brush}" BorderThickness="0,1,0,0" Padding="0,16">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Heading}" FontFamily="{StaticResource Font.Sans}"
+                                                   FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Body}" FontFamily="{StaticResource Font.Sans}" FontSize="14"
+                                                   Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" MaxWidth="620"
+                                                   HorizontalAlignment="Left" TextWrapping="Wrap" LineHeight="21" />
+                                        <!-- Encadré note (optionnel) -->
+                                        <Border x:Name="note" Visibility="Collapsed" CornerRadius="5" ClipToBounds="True"
+                                                Margin="0,12,0,0" MaxWidth="620" HorizontalAlignment="Left"
+                                                Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                                                BorderThickness="1">
+                                            <Grid>
+                                                <Border Width="2" HorizontalAlignment="Left" Background="{DynamicResource AccentBrush}" />
+                                                <StackPanel Margin="16,11">
+                                                    <TextBlock Text="{l:Loc Guide_Note}" FontFamily="{StaticResource Font.Mono}"
+                                                               FontSize="10.5" Foreground="{DynamicResource AmberBrush}" />
+                                                    <TextBlock Text="{Binding Note}" FontFamily="{StaticResource Font.Sans}"
+                                                               FontSize="13.5" Foreground="{DynamicResource MutedBrush}"
+                                                               Margin="0,5,0,0" TextWrapping="Wrap" LineHeight="20" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding HasNote}" Value="True">
+                                        <Setter TargetName="note" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Grid>
+</Window>

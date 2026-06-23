@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="fr-FR" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="ProductDesc" Value="MAAT - Monitoring et Audit des Accès pour la Traçabilité" />
+  <String Id="DowngradeMsg" Value="Une version plus récente de MAAT est déjà installée." />
+  <String Id="ProgIdDesc" Value="Projet d'audit MAAT" />
+  <String Id="VerbOpen" Value="Ouvrir avec MAAT" />
+</WixLocalization>

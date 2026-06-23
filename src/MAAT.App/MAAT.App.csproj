@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\MAAT.Core\MAAT.Core.csproj" />
+    <ProjectReference Include="..\MAAT.Storage\MAAT.Storage.csproj" />
+    <ProjectReference Include="..\MAAT.Export\MAAT.Export.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>..\..\ressources\Icons\maat.ico</ApplicationIcon>
+    <AssemblyTitle>MAAT</AssemblyTitle>
+    <Product>MAAT</Product>
+    <Version>1.1.0</Version>
+    <Authors>Pierre-Nicolas MARTIN</Authors>
+    <Company>Pierre-Nicolas MARTIN</Company>
+    <Copyright>© 2026 Pierre-Nicolas MARTIN</Copyright>
+    <!-- GC workstation concurrent : empreinte mémoire basse (le GC serveur a montré
+         une RAM ~3× supérieure sans gain de vitesse sur les audits). Le moteur
+         streaming garde la mémoire bornée même sur des arbres de plusieurs millions
+         d'éléments ; on évite donc explicitement le GC serveur. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\maat.ico" />
+    <!-- Logos déclinés clair/sombre : le « dark » (noir) sert le thème Paper, le « light » (blanc) le thème Ink -->
+    <Resource Include="Assets\logo_texte_dark.png" />
+    <Resource Include="Assets\logo_texte_light.png" />
+    <Resource Include="Assets\symbol_dark.png" />
+    <Resource Include="Assets\symbol_light.png" />
+    <!-- Polices embarquées (Inter / Fraunces / JetBrains Mono — toutes OFL) -->
+    <Resource Include="Assets\Fonts\*.ttf" />
+  </ItemGroup>
+
+</Project>
