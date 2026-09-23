@@ -170,16 +170,16 @@
             <StackPanel>
 
                 <!-- Rangée de signaux (seulement les anomalies présentes + AD) -->
-                <ItemsControl ItemsSource="{Binding Signals}" Margin="0"
+                <ItemsControl ItemsSource="{Binding Signals}" Margin="-5"
                               Visibility="{Binding HasSignals, Converter={StaticResource BoolToVis}}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <UniformGrid Rows="1" />
+                            <UniformGrid Columns="{Binding SignalColumns}" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Margin="5,0" CornerRadius="8" BorderThickness="1" Padding="15,13" Style="{StaticResource TileBorder}">
+                            <Border Margin="5" CornerRadius="8" BorderThickness="1" Padding="15,13" Style="{StaticResource TileBorder}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />

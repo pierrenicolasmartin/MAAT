@@ -71,6 +71,24 @@ public sealed class TreeNodeViewModel : ObservableObject, IDisposable
     public bool HasChildren { get; }
     public ObservableCollection<object> Children { get; }
 
+    /// <summary>Fichier (pictogramme document) ou dossier (pictogramme dossier).</summary>
+    public bool IsFile => _row.IsFile;
+
+    /// <summary>États particuliers (ACL illisible, contenu non listable, lien DFS, boucle…).</summary>
+    public MAAT.Core.Models.ItemFlags Flags => _row.Flags;
+
+    /// <summary>Audit incomplet pour cet élément : pastille d'avertissement dans l'arbre.</summary>
+    public bool HasWarning => (Flags & ItemStateViewModel.WarningFlags) != 0;
+
+    /// <summary>Lien d'espace de noms DFS (étiquette discrète dans l'arbre).</summary>
+    public bool IsDfsLink => (Flags & MAAT.Core.Models.ItemFlags.DfsLink) != 0;
+
+    /// <summary>Jonction ou lien symbolique (hors DFS) : audité, cible non parcourue.</summary>
+    public bool IsReparseLink => _row.IsReparse && !IsDfsLink;
+
+    /// <summary>Info-bulle résumant les états de l'élément (null si aucun).</summary>
+    public string? StateTooltip => ItemStateViewModel.Tooltip(Flags, IsReparseLink);
+
     /// <summary>Taille formatée (vide si non calculée), préfixe ≈ si partielle.</summary>
     public string SizeText => SizeFormatter.Format(_row.SizeBytes, _row.SizePartial, LocalizationManager.Instance.ActiveCode);
 

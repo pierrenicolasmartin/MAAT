@@ -417,7 +417,8 @@ public sealed class StreamingAuditEngine
 
     private Built BuildOne(FsEntry e, int depth, bool isFile)
     {
-        bool isReparse = !isFile && e.IsNameSurrogate;
+        // Jonction / lien symbolique (dossier ou fichier) : audité, cible non suivie.
+        bool isReparse = e.IsNameSurrogate;
         long? size = isFile ? (e.IsNameSurrogate ? null : e.Size) : null;
         var built = BuildItem(e.FullPath, e.Name, depth, isFile, isReparse, size);
         if (!isFile && e.IsDfsLink)

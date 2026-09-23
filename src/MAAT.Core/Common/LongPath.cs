@@ -30,6 +30,11 @@ internal static class LongPath
         {
             return path;
         }
+        // Le préfixe \\?\ désactive la normalisation Win32 : « / » n'y serait plus un séparateur.
+        if (path.Contains('/'))
+        {
+            path = path.Replace('/', '\\');
+        }
         if (path.StartsWith(@"\\", StringComparison.Ordinal))
         {
             return @"\\?\UNC\" + path[2..];

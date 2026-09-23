@@ -205,6 +205,13 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<AceLineViewModel> SelectedAcl { get; } = new();
     public bool HasSelectedFolder => _selectedNode is not null;
+
+    /// <summary>Table d'ACL visible seulement si elle a des lignes (sinon un encart d'état l'explique).</summary>
+    public bool HasSelectedAcl => SelectedAcl.Count > 0;
+
+    /// <summary>États de l'élément sélectionné (ACL illisible, contenu non listable, lien DFS…).</summary>
+    public ObservableCollection<ItemStateViewModel> SelectedFolderStates { get; } = new();
+    public bool HasSelectedFolderStates => SelectedFolderStates.Count > 0;
     public string SelectedFolderName { get => _selFolderName; private set => SetProperty(ref _selFolderName, value); }
     public string SelectedFolderPath { get => _selFolderPath; private set => SetProperty(ref _selFolderPath, value); }
     public string SelectedFolderSummary { get => _selFolderSummary; private set => SetProperty(ref _selFolderSummary, value); }
@@ -245,7 +252,12 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HasSelectedFolder));
         foreach (var l in SelectedAcl) { l.Dispose(); }
         SelectedAcl.Clear();
-        if (_selectedNode is null || _repo is null) { return; }
+        SelectedFolderStates.Clear();
+        if (_selectedNode is null || _repo is null)
+        {
+            NotifyFolderDetail();
+            return;
+        }
 
         SelectedFolderName = _selectedNode.Name;
         SelectedFolderPath = _selectedNode.FullPath;
@@ -268,6 +280,21 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
             parts.Add($"{LocalizationManager.T("Scan_InheritedN", inh)} · {LocalizationManager.T("Scan_ExplicitN", exp)}");
         }
         SelectedFolderSummary = string.Join("  │  ", parts);
+
+        // États : ACL illisible, contenu non listable… et « aucune ACE » quand les droits
+        // ont été lus mais qu'aucune entrée n'est retenue (DACL vide ou filtre d'identités).
+        bool noAce = ShowRightsStat && SelectedAcl.Count == 0;
+        foreach (var state in ItemStateViewModel.For(_selectedNode.Flags, noAce, _selectedNode.IsReparseLink))
+        {
+            SelectedFolderStates.Add(state);
+        }
+        NotifyFolderDetail();
+    }
+
+    private void NotifyFolderDetail()
+    {
+        OnPropertyChanged(nameof(HasSelectedAcl));
+        OnPropertyChanged(nameof(HasSelectedFolderStates));
     }
 
     /// <summary>Terme de recherche : filtre l'affichage en liste à plat depuis SQLite.</summary>
@@ -374,13 +401,14 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
     public string SummaryText { get => _summaryText; private set => SetProperty(ref _summaryText, value); }
 
     // --- Badges de synthèse (façon rapport HTML) ---
-    private int _statFolders, _statFiles, _statAces, _statIdentities;
+    // Compteurs déjà formatés (séparateur de milliers de la langue active : « 176 605 »).
+    private string _statFolders = "0", _statFiles = "0", _statAces = "0", _statIdentities = "0";
     private string _statSizeText = string.Empty;
 
-    public int StatFolders { get => _statFolders; private set => SetProperty(ref _statFolders, value); }
-    public int StatFiles { get => _statFiles; private set => SetProperty(ref _statFiles, value); }
-    public int StatAces { get => _statAces; private set => SetProperty(ref _statAces, value); }
-    public int StatIdentities { get => _statIdentities; private set => SetProperty(ref _statIdentities, value); }
+    public string StatFolders { get => _statFolders; private set => SetProperty(ref _statFolders, value); }
+    public string StatFiles { get => _statFiles; private set => SetProperty(ref _statFiles, value); }
+    public string StatAces { get => _statAces; private set => SetProperty(ref _statAces, value); }
+    public string StatIdentities { get => _statIdentities; private set => SetProperty(ref _statIdentities, value); }
     public string StatSizeText { get => _statSizeText; private set => SetProperty(ref _statSizeText, value); }
 
     public bool ShowFilesStat => _parameters.AuditFiles;
@@ -389,11 +417,11 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
 
     private void PopulateStats(int folders, int files, int aces)
     {
-        StatFolders = folders;
-        StatFiles = files;
-        StatAces = aces;
+        StatFolders = FormatNumber(folders);
+        StatFiles = FormatNumber(files);
+        StatAces = FormatNumber(aces);
         if (_repo is null) { return; }
-        StatIdentities = _parameters.AuditRights ? _repo.CountIdentities(_runId) : 0;
+        StatIdentities = FormatNumber(_parameters.AuditRights ? _repo.CountIdentities(_runId) : 0);
         if (_parameters.AuditSize && _repo.GetRoot(_runId)?.SizeBytes is long bytes)
         {
             StatSizeText = SizeFormatter.Format(bytes, false, LocalizationManager.Instance.ActiveCode);
@@ -627,6 +655,10 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
             }
         }
     }
+
+    /// <summary>Formate un entier avec le séparateur de milliers de la langue active.</summary>
+    private static string FormatNumber(int value)
+        => value.ToString("#,0", CultureInfo.GetCultureInfo(LocalizationManager.Instance.ActiveCode == "en" ? "en-US" : "fr-FR"));
 
     /// <summary>Formate « 54 327 / 181 033 » avec le séparateur de milliers de la langue active.</summary>
     private static string FormatCount(int current, int total)

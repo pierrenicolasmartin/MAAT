@@ -119,6 +119,14 @@
                     <TextBlock Style="{StaticResource ColLabel}" Text="{l:Loc Scan_Folders}" Margin="0,4,0,0" />
                 </StackPanel>
                 <Border BorderBrush="{DynamicResource Card2Brush}" BorderThickness="1,0,0,0"
+                        Visibility="{Binding ShowFilesStat, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Margin="20,12" MinWidth="120">
+                        <TextBlock Text="{Binding StatFiles}" FontFamily="{StaticResource Font.Serif}" FontSize="21"
+                                   Foreground="{DynamicResource TextBrush}" TextOptions.TextFormattingMode="Ideal" />
+                        <TextBlock Style="{StaticResource ColLabel}" Text="{l:Loc Scan_Files}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border BorderBrush="{DynamicResource Card2Brush}" BorderThickness="1,0,0,0"
                         Visibility="{Binding ShowSizeStat, Converter={StaticResource BoolToVis}}">
                     <StackPanel Margin="20,12" MinWidth="120">
                         <TextBlock Text="{Binding StatSizeText}" FontFamily="{StaticResource Font.Serif}" FontSize="21"
@@ -321,12 +329,44 @@
                                         </Border.Style>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" beh:TextHighlight.Text="{Binding Label}" beh:TextHighlight.Query="{Binding HighlightTerm}"
+                                            <!-- Pictogramme : dossier ou fichier -->
+                                            <Path Grid.Column="0" Width="12" Height="12" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"
+                                                  Stroke="{DynamicResource TertiaryBrush}" StrokeThickness="1.1" StrokeLineJoin="Round">
+                                                <Path.Style>
+                                                    <Style TargetType="Path">
+                                                        <Setter Property="Data" Value="M0.5,2.5 L4.5,2.5 L5.8,4 L11.5,4 L11.5,11 L0.5,11 Z" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFile}" Value="True">
+                                                                <Setter Property="Data" Value="M2,0.5 L7.5,0.5 L10,3 L10,11.5 L2,11.5 Z M7.5,0.5 L7.5,3 L10,3" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Path.Style>
+                                            </Path>
+                                            <TextBlock Grid.Column="1" beh:TextHighlight.Text="{Binding Label}" beh:TextHighlight.Query="{Binding HighlightTerm}"
                                                        Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontFamily="{StaticResource Font.Mono}" FontSize="11"
+                                            <!-- États : lien DFS (étiquette neutre), audit incomplet (pastille ambre) -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0"
+                                                        Background="Transparent" ToolTip="{Binding StateTooltip}">
+                                                <Border CornerRadius="3" Padding="4,0" Background="{DynamicResource Card2Brush}" VerticalAlignment="Center"
+                                                        Visibility="{Binding IsDfsLink, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="{l:Loc Scan_DfsTag}" FontFamily="{StaticResource Font.Mono}" FontSize="9.5"
+                                                               Foreground="{DynamicResource MutedBrush}" />
+                                                </Border>
+                                                <Border CornerRadius="3" Padding="4,0" Background="{DynamicResource Card2Brush}" VerticalAlignment="Center"
+                                                        Visibility="{Binding IsReparseLink, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="{l:Loc Scan_LinkTag}" FontFamily="{StaticResource Font.Mono}" FontSize="9.5"
+                                                               Foreground="{DynamicResource MutedBrush}" />
+                                                </Border>
+                                                <Ellipse Width="7" Height="7" Margin="5,0,0,0" VerticalAlignment="Center" Fill="{DynamicResource AmberBrush}"
+                                                         Visibility="{Binding HasWarning, Converter={StaticResource BoolToVis}}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="3" Text="{Binding SizeText}" FontFamily="{StaticResource Font.Mono}" FontSize="11"
                                                        Foreground="{DynamicResource TertiaryBrush}" Margin="10,0,0,0" VerticalAlignment="Center"
                                                        Visibility="{Binding HasSize, Converter={StaticResource BoolToVis}}" />
                                         </Grid>
@@ -422,8 +462,44 @@
                                        Foreground="{DynamicResource TertiaryBrush}" Margin="0,8,0,14" />
                         </StackPanel>
 
+                        <!-- États particuliers (ACL illisible, contenu non listable, lien DFS…) -->
+                        <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding SelectedFolderStates}" Margin="0,0,0,14"
+                                      Visibility="{Binding HasSelectedFolderStates, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                            CornerRadius="6" Margin="0,0,0,8" ClipToBounds="True">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="3" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" CornerRadius="6,0,0,6">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{DynamicResource BorderStrongBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsWarning}" Value="True">
+                                                                <Setter Property="Background" Value="{DynamicResource AmberBrush}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="14,10,14,11">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12.5" Foreground="{DynamicResource TextBrush}" />
+                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource MutedBrush}"
+                                                           TextWrapping="Wrap" Margin="0,3,0,0" LineHeight="17" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
                         <!-- Table d'ACL -->
-                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True"
+                                VerticalAlignment="Top" Visibility="{Binding HasSelectedAcl, Converter={StaticResource BoolToVis}}">
                             <DockPanel>
                                 <!-- En-tête de colonnes -->
                                 <Border DockPanel.Dock="Top" Background="{DynamicResource HeaderBrush}" Padding="12,9"
@@ -431,10 +507,10 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="92" />
-                                            <ColumnDefinition Width="1.5*" />
+                                            <ColumnDefinition Width="1.8*" />
                                             <ColumnDefinition Width="64" />
-                                            <ColumnDefinition Width="1.7*" />
-                                            <ColumnDefinition Width="1.4*" />
+                                            <ColumnDefinition Width="1.45*" />
+                                            <ColumnDefinition Width="1.5*" />
                                             <ColumnDefinition Width="96" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Style="{StaticResource ColLabel}" Text="{l:Loc Scan_ColType}" />
@@ -467,10 +543,10 @@
                                                         <Grid Margin="12,9">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="92" />
-                                                                <ColumnDefinition Width="1.5*" />
+                                                                <ColumnDefinition Width="1.8*" />
                                                                 <ColumnDefinition Width="64" />
-                                                                <ColumnDefinition Width="1.7*" />
-                                                                <ColumnDefinition Width="1.4*" />
+                                                                <ColumnDefinition Width="1.45*" />
+                                                                <ColumnDefinition Width="1.5*" />
                                                                 <ColumnDefinition Width="96" />
                                                             </Grid.ColumnDefinitions>
                                                             <!-- Type -->
@@ -488,7 +564,7 @@
                                                                 </TextBlock.Style>
                                                             </TextBlock>
                                                             <!-- Identité -->
-                                                            <TextBlock Grid.Column="1" Text="{Binding Identity}" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"
+                                                            <TextBlock Grid.Column="1" Text="{Binding Identity}" ToolTip="{Binding Identity}" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"
                                                                        VerticalAlignment="Center" Margin="0,0,8,0" TextTrimming="CharacterEllipsis" />
                                                             <!-- Membres -->
                                                             <ContentControl Grid.Column="2" VerticalAlignment="Center">
