@@ -49,7 +49,9 @@ public sealed class TreeNodeViewModel : ObservableObject, IDisposable
         _leaf = leaf;
         HighlightTerm = highlight;
         Children = new ObservableCollection<object>();
-        HasChildren = !leaf && !row.IsFile && ctx.Repo.CountChildren(row.Id) > 0;
+        // « A des enfants ? » est fourni par la requête de l'arbre (EXISTS) : plus de
+        // requête COUNT par nœud créé (N+1 coûteux sur les dossiers à large éventail).
+        HasChildren = !leaf && !row.IsFile && (row.HasChildren ?? ctx.Repo.CountChildren(row.Id) > 0);
         if (HasChildren)
         {
             Children.Add(LoadingPlaceholder.Instance); // déclenche l'affichage de l'expandeur

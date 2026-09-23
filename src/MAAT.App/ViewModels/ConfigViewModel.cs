@@ -163,9 +163,10 @@ public sealed class ConfigViewModel : ObservableObject
         if (!CanStart) { return; }
         var parameters = new AuditParameters
         {
-            RootPath = _rootPath.TrimEnd('\\').Length == 2 && _rootPath.EndsWith(':')
-                ? _rootPath + '\\' // « C: » → « C:\ »
-                : _rootPath,
+            // Forme canonique (« C: » → « C:\ », « / » → « \ », « .. » résolus, sans
+            // antislash final) : indispensable au préfixe chemin long du moteur, et à la
+            // cohérence des chemins relatifs des exports.
+            RootPath = MAAT.Core.Common.PathNormalizer.NormalizeRoot(_rootPath),
             Depth = _selectedDepth.EngineDepth,
             Scope = _scope,
             Content = _content,

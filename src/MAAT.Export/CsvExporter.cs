@@ -74,6 +74,29 @@ public sealed class CsvExporter
                 continue;
             }
 
+            // Élément sans ACE (ACL illisible, DACL vide, ACE toutes filtrées) : une ligne
+            // explicite, pour qu'il figure dans l'export au lieu d'en disparaître.
+            if (item.Acl.Count == 0)
+            {
+                sb.Clear();
+                sb.Append(pathField).Append(_delimiter)
+                  .Append(levelsCsv).Append(_delimiter);
+                if (p.AuditSize)
+                {
+                    sb.Append(sizeField).Append(_delimiter);
+                }
+                string status = (item.Flags & ItemFlags.AclUnreadable) != 0 ? L("Csv_AclUnreadable") : L("Csv_NoAce");
+                sb.Append(Quote(string.Empty)).Append(_delimiter)   // identité
+                  .Append(Quote(string.Empty)).Append(_delimiter)   // membres
+                  .Append(Quote(string.Empty)).Append(_delimiter)   // type
+                  .Append(Quote(status)).Append(_delimiter)         // autorisations
+                  .Append(Quote(string.Empty)).Append(_delimiter)   // portée
+                  .Append(Quote(string.Empty)).Append(_delimiter)   // hérité
+                  .Append(Quote(string.Empty));                     // source
+                writer.WriteLine(sb.ToString());
+                continue;
+            }
+
             // Mode Droits : une ligne par ACE
             foreach (var ace in item.Acl)
             {

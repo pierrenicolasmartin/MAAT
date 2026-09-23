@@ -8,6 +8,7 @@
 // the GNU General Public License <https://www.gnu.org/licenses/> for details.
 
 using System.Diagnostics;
+using MAAT.Core.Acl;
 using MAAT.Core.Common;
 using MAAT.Core.Diagnostics;
 using MAAT.Core.Localization;
@@ -32,13 +33,14 @@ public sealed class SizeIndexer
     private readonly IScanLog _log;
     private readonly string _lang;
 
-    private Dictionary<string, long> _sizes = new(StringComparer.OrdinalIgnoreCase);
-    private HashSet<string> _incomplete = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, long> _sizes = new(StringComparer.Ordinal);
+    private HashSet<string> _incomplete = new(StringComparer.Ordinal);
     private IProgress<ScanProgress>? _progress;
     private CancellationToken _ct;
     private Stopwatch _sw = new();
     private long _nextProgress;
     private int _dirCount;
+    private readonly TraversalGuard _guard = new();
     private int _auditMaxDepth;
     private bool _auditFiles;
 
@@ -66,8 +68,8 @@ public sealed class SizeIndexer
         IProgress<ScanProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        _sizes = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-        _incomplete = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        _sizes = new Dictionary<string, long>(StringComparer.Ordinal);
+        _incomplete = new HashSet<string>(StringComparer.Ordinal);
         _progress = progress;
         _ct = cancellationToken;
         _auditMaxDepth = auditMaxDepth;
@@ -76,8 +78,9 @@ public sealed class SizeIndexer
         _sw = Stopwatch.StartNew();
         _nextProgress = 0;
         _dirCount = 0;
+        _guard.Reset();
 
-        ComputeDir(rootPath, 0);
+        ComputeDir(rootPath, 0, default, entry: null);
 
         progress?.Report(ScanProgress.Indeterminate(
             ScanPhase.ComputingSizes, CoreStrings.T(_lang, "Prog_SizeEnum", _dirCount)));
@@ -93,7 +96,7 @@ public sealed class SizeIndexer
     /// dessein : l'énumération des métadonnées est I/O-bound et souvent dominée par
     /// un sous-arbre unique (WinSxS…), où la parallélisation déséquilibre la charge.
     /// </summary>
-    private (long Size, bool Partial) ComputeDir(string dir, int depth)
+    private (long Size, bool Partial) ComputeDir(string dir, int depth, DirIdentity parentId, FsEntry? entry)
     {
         _ct.ThrowIfCancellationRequested();
 
@@ -106,12 +109,32 @@ public sealed class SizeIndexer
             _nextProgress = _sw.ElapsedMilliseconds + ProgressThrottleMs;
         }
 
-        var entries = FastDirectoryEnumerator.List(dir, out int error);
+        // Profondeur de sécurité / boucle : dossier émis comme feuille, non dimensionné
+        // (sa taille serait celle d'un ancêtre, comptée deux fois, voire infinie).
+        if (depth >= TraversalGuard.MaxDepth)
+        {
+            return (0, true);
+        }
+        bool readId = entry is null || entry.Value.IsReparse;
+        var entries = FastDirectoryEnumerator.List(dir, readId, out int error, out var opened);
+        var id = readId ? opened : parentId.Child(entry!.Value.FileId);
+        if (!_guard.TryEnter(id, dir, entries, out bool tracked))
+        {
+            return (0, false);
+        }
+
         bool partial = error != NativeMethods.ERROR_SUCCESS;
         if (partial)
         {
-            _log.Write("TAILLE_ACCES_REFUSE", dir,
-                $"Énumération impossible lors du calcul des tailles (code {error})");
+            string type = error switch
+            {
+                NativeMethods.ERROR_ACCESS_DENIED => "TAILLE_ACCES_REFUSE",
+                NativeMethods.ERROR_FILE_NOT_FOUND or NativeMethods.ERROR_PATH_NOT_FOUND => "TAILLE_CHEMIN_INTROUVABLE",
+                _ => "TAILLE_ERREUR_ENUM",
+            };
+            _log.Write(type, dir,
+                $"Énumération {(entries.Count > 0 ? "partielle" : "impossible")} lors du calcul des tailles : " +
+                Win32Text.Describe(error));
         }
 
         long total = 0;
@@ -125,7 +148,7 @@ public sealed class SizeIndexer
                     if (InAuditDepth(depth + 1)) { EmitItemCount++; }
                     continue;
                 }
-                var (childSize, childPartial) = ComputeDir(e.FullPath, depth + 1);
+                var (childSize, childPartial) = ComputeDir(e.FullPath, depth + 1, id, e);
                 total += childSize;
                 partial |= childPartial;
             }
@@ -139,6 +162,7 @@ public sealed class SizeIndexer
             }
         }
 
+        _guard.Leave(id, tracked);
         _sizes[dir] = total;
         if (partial)
         {

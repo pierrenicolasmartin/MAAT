@@ -182,6 +182,12 @@ public sealed class HtmlReportExporter
                 w.Write(",\"a\":");
                 w.Write(aclIdx);
             }
+            if (item.Flags != MAAT.Core.Models.ItemFlags.None)
+            {
+                // États (ACL illisible, contenu non listable, lien DFS…) : badges du rapport.
+                w.Write(",\"f\":");
+                w.Write((int)item.Flags);
+            }
             w.Write('}');
         }
         w.Write(']');
@@ -295,6 +301,13 @@ public sealed class HtmlReportExporter
             ("cFolder", "Col_Folder"), ("cSize", "Col_Size"), ("cIdentity", "Col_Identity"),
             ("cMembers", "Col_Members"), ("cType", "Col_Type"), ("cRights", "Col_Rights"),
             ("cScope", "Col_Scope"), ("cInherited", "Col_Inherited"), ("cSource", "Col_Source"),
+            ("aclUnreadable", "J_AclUnreadable"),
+            ("stAcl", "St_AclUnreadable"), ("stAclTip", "St_AclUnreadableTip"),
+            ("stContent", "St_ContentUnreadable"), ("stContentTip", "St_ContentUnreadableTip"),
+            ("stDfs", "St_DfsLink"), ("stDfsTip", "St_DfsLinkTip"),
+            ("stCycle", "St_Cycle"), ("stCycleTip", "St_CycleTip"),
+            ("stDepth", "St_DepthLimit"), ("stDepthTip", "St_DepthLimitTip"),
+            ("stNull", "St_NullDacl"), ("stNullTip", "St_NullDaclTip"),
         };
         var sb = new StringBuilder("{");
         for (int i = 0; i < map.Length; i++)

@@ -40,6 +40,18 @@ public sealed class AuditSummary
     /// <summary>Jonctions / liens symboliques rencontrés (audités, non parcourus).</summary>
     public int ReparseCount { get; init; }
 
+    /// <summary>Liens DFS rencontrés (parcourus de façon transparente vers leur cible).</summary>
+    public int DfsLinkCount { get; init; }
+
+    /// <summary>Boucles de traversée détectées (dossier réapparaissant dans sa propre ascendance).</summary>
+    public int CycleCount { get; init; }
+
+    /// <summary>
+    /// Vrai si le partage audité applique l'énumération basée sur l'accès (ABE) : les
+    /// éléments que le compte d'audit ne peut pas lire lui sont invisibles.
+    /// </summary>
+    public bool AccessBasedEnumeration { get; init; }
+
     /// <summary>Éléments dont la lecture ACL a échoué.</summary>
     public int AclErrorCount { get; init; }
 

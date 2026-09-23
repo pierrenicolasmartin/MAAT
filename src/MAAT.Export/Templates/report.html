@@ -98,6 +98,9 @@ html[data-theme="dark"] .thsw .ic-sun{display:block}
 /* V1.0.5 : refus portes par la sous-arborescence (parent replie) */
 .tn-dy.tn-dys{opacity:.6;border-style:dashed;font-weight:400;background:rgba(248,113,113,.07)}
 .tn-sz{font-size:.7em;padding:2px 9px;border-radius:999px;background:rgba(52,211,153,.12);color:var(--green);margin-left:8px;font-weight:400;white-space:nowrap;font-variant-numeric:tabular-nums;font-family:Consolas,'Courier New',monospace}
+/* États d'un élément (ACL illisible, contenu non listable, lien DFS…) */
+.tn-st{font-size:.68em;padding:2px 8px;border-radius:999px;margin-left:6px;font-weight:500;white-space:nowrap;background:rgba(217,119,6,.13);color:#d97706;cursor:help}
+.tn-st.nf{background:var(--card2);color:var(--muted)}
 /* Conteneur enfants : guide d'indentation vertical aligne sur la fleche parente */
 .tn-ch{display:none;position:relative}
 .tn-ch.vi{display:block}
@@ -302,6 +305,16 @@ var fO={},fPS=100,fCM=fPS,fD=D;
 
 /* --- Utilitaires --- */
 function eH(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+/* Badges d'état d'un élément (bits : 1 ACL illisible, 2 contenu non listable, 4 lien DFS,
+   8 boucle, 16 profondeur max., 32 DACL nulle) */
+function stB(f){
+  if(!f)return'';
+  var h='';
+  function b(bit,lab,tip,cls){if(f&bit)h+='<span class="tn-st'+(cls||'')+'" title="'+eH(tip)+'">'+eH(lab)+'</span>';}
+  b(1,L.stAcl,L.stAclTip);b(2,L.stContent,L.stContentTip);b(8,L.stCycle,L.stCycleTip);
+  b(16,L.stDepth,L.stDepthTip);b(32,L.stNull,L.stNullTip);b(4,L.stDfs,L.stDfsTip,' nf');
+  return h;
+}
 function eC(s){return s?s.replace(/"/g,'""'):'';}
 
 /* Highlight — entoure les occurrences du terme recherché */
@@ -321,7 +334,7 @@ function bTree(d){
   d.forEach(function(n){
     var rel=getRel(n.p);
     var isFile=(n.t===1);
-    var node={name:'',path:n.p,rel:rel,depth:n.d,acl:aclOf(n),tp:n.t,sz:n.s||'',children:[],files:[]};
+    var node={name:'',path:n.p,rel:rel,depth:n.d,acl:aclOf(n),tp:n.t,sz:n.s||'',fl:n.f||0,children:[],files:[]};
     if(!rel||rel===''){
       node.name=RN;node.rel='(Racine)';
       root=node;map['']=node;
@@ -427,7 +440,8 @@ function tgMb(el){
   if(show)el.classList.add('op');else el.classList.remove('op');
 }
 
-function aclTbl(acl,fv){
+function aclTbl(acl,fv,fl){
+  if(fl&1)return'<div class="em-s">'+L.aclUnreadable+'</div>';
   var fa=fA(acl,fv);
   if(!fa.length)return'<div class="em-s">'+L.noAcl+'</div>';
   var h='<div class="acl-w"><table><thead><tr><th>'+L.identity+'</th><th>'+L.members+'</th><th>'+L.type+'</th><th>'+L.rights+'</th><th>'+L.scope+'</th><th>'+L.inheritance+'</th><th>'+L.source+'</th></tr></thead><tbody>';
@@ -477,7 +491,7 @@ function rTN(node,key,indent){
   /* Name */
   if(AD&&al.length>0){h+='<div class="tn-nm" data-key="'+key+'" onclick="tA(\''+key+'\')" title="'+L.aclTip+'">';}
   else{h+='<div class="tn-nm" style="cursor:default">';}
-  h+='<span class="n">'+eH(node.name)+'</span>'+(isFile?xCap(node.name):'')+(AT&&node.sz?'<span class="tn-sz"'+(node.sz.charAt(0)==='≈'?' title="'+L.partialSize+'"':'')+'>'+eH(node.sz)+'</span>':'')+'</div>';
+  h+='<span class="n">'+eH(node.name)+'</span>'+(isFile?xCap(node.name):'')+(AT&&node.sz?'<span class="tn-sz"'+(node.sz.charAt(0)==='≈'?' title="'+L.partialSize+'"':'')+'>'+eH(node.sz)+'</span>':'')+stB(node.fl)+'</div>';
 
   /* Badges : refus (propres ou dans la sous-arborescence) puis compteur ACL */
   if(AD&&fa>0)h+='<span class="tn-bg" id="bg_'+key+'">'+fa+' ACL</span>';
@@ -486,7 +500,7 @@ function rTN(node,key,indent){
   /* ACL panel — créé caché, rendu lazy au premier affichage */
   if(AD&&al.length>0){
     h+='<div class="tn-acl'+(ao?' vi':'')+'" id="acl_'+key+'" style="margin-left:'+(40+indent*20)+'px"'+(ao?'':' data-lazy="1"')+'>';
-    if(ao){h+=aclTbl(node.acl,fv);}
+    if(ao){h+=aclTbl(node.acl,fv,node.fl);}
     h+='</div>';
   }
 
@@ -552,10 +566,10 @@ function tA(key){
   if(AO[key]){
     if(panel.dataset.lazy==='1'){
       var node=findNode(TREE,key);
-      if(node){panel.innerHTML=aclTbl(node.acl,fE.value);panel.dataset.lazy='0';panel.dataset.fv=fE.value;}
+      if(node){panel.innerHTML=aclTbl(node.acl,fE.value,node.fl);panel.dataset.lazy='0';panel.dataset.fv=fE.value;}
     }else if(panel.dataset.fv!==fE.value){
       var node2=findNode(TREE,key);
-      if(node2){panel.innerHTML=aclTbl(node2.acl,fE.value);panel.dataset.fv=fE.value;}
+      if(node2){panel.innerHTML=aclTbl(node2.acl,fE.value,node2.fl);panel.dataset.fv=fE.value;}
     }
     panel.classList.add('vi');
   }else{
@@ -582,12 +596,13 @@ function rFN(n,i){
   var ico=isFile?ICO_F:ICO_D;
   var sz=n.sz||n.s||'';
   var term=curSearch;
-  var h='<div class="fl-nd'+(isFile?' tn-file':'')+'"><div class="fl-nh'+(o?' ac':'')+'" onclick="tF('+i+')"><div class="fl-tg'+(o?' op':'')+'">&#9654;</div><span class="ic'+(isFile?' ic-f':'')+'">'+ico+'</span><div class="fl-np"><span class="pa">'+hl(d.p,term)+'</span><span class="n">'+hl(d.n,term)+'</span>'+(isFile?xCap(d.n):'')+(AT&&sz?'<span class="tn-sz"'+(sz.charAt(0)==='≈'?' title="'+L.partialSize+'"':'')+'>'+eH(sz)+'</span>':'')+'</div>';
+  var h='<div class="fl-nd'+(isFile?' tn-file':'')+'"><div class="fl-nh'+(o?' ac':'')+'" onclick="tF('+i+')"><div class="fl-tg'+(o?' op':'')+'">&#9654;</div><span class="ic'+(isFile?' ic-f':'')+'">'+ico+'</span><div class="fl-np"><span class="pa">'+hl(d.p,term)+'</span><span class="n">'+hl(d.n,term)+'</span>'+(isFile?xCap(d.n):'')+(AT&&sz?'<span class="tn-sz"'+(sz.charAt(0)==='≈'?' title="'+L.partialSize+'"':'')+'>'+eH(sz)+'</span>':'')+stB(n.fl||n.f)+'</div>';
   if(AD)h+='<span class="tn-bg">'+fa.length+' ACL</span>';
   h+='</div>';
   if(AD&&o){
     h+='<div class="tn-acl vi" style="margin-left:40px">';
-    if(!fa.length){h+='<div class="em-s">'+L.noAcl+'</div>';}
+    if((n.fl||n.f)&1){h+='<div class="em-s">'+L.aclUnreadable+'</div>';}
+    else if(!fa.length){h+='<div class="em-s">'+L.noAcl+'</div>';}
     else{
       h+='<div class="acl-w"><table><thead><tr><th>'+L.identity+'</th><th>'+L.members+'</th><th>'+L.type+'</th><th>'+L.rights+'</th><th>'+L.scope+'</th><th>'+L.inheritance+'</th><th>'+L.source+'</th></tr></thead><tbody>';
       fa.forEach(function(a){
@@ -690,7 +705,7 @@ function aF(){
     fD=fD.map(function(n){
       var rel=getRel(n.p||'');
       var resolved=aclOf(n);
-      return{path:n.p,p:n.p,rel:rel||'(Racine)',depth:n.d,d:n.d,acl:resolved,a:resolved,tp:n.t,t:n.t,sz:n.s||'',s:n.s||''};
+      return{path:n.p,p:n.p,rel:rel||'(Racine)',depth:n.d,d:n.d,acl:resolved,a:resolved,tp:n.t,t:n.t,sz:n.s||'',s:n.s||'',f:n.f||0,fl:n.f||0};
     });
     srcEl.textContent=fD.length+' '+(fD.length>1?L.results:L.result);
     bS(fD);rFlat();

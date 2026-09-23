@@ -7,6 +7,8 @@
 // any later version. This program is distributed WITHOUT ANY WARRANTY; see
 // the GNU General Public License <https://www.gnu.org/licenses/> for details.
 
+using MAAT.Core.Models;
+
 namespace MAAT.Storage;
 
 /// <summary>Ligne de synthèse d'un audit (table <c>audit_run</c>).</summary>
@@ -40,7 +42,9 @@ public sealed record FsItemRow(
     bool IsReparse,
     long? SizeBytes,
     bool SizePartial,
-    bool HasDeny);
+    bool HasDeny,
+    ItemFlags Flags = ItemFlags.None,
+    bool? HasChildren = null);
 
 /// <summary>Identité agrégée sur tout l'audit (pour le panneau Identités).</summary>
 public sealed record IdentityRow(

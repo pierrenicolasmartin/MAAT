@@ -7,7 +7,9 @@
 // any later version. This program is distributed WITHOUT ANY WARRANTY; see
 // the GNU General Public License <https://www.gnu.org/licenses/> for details.
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using MAAT.Core.Acl;
@@ -24,13 +26,20 @@ using AceType = MAAT.Core.Models.AceType;
 namespace MAAT.Core;
 
 /// <summary>
-/// Moteur d'audit en <b>une seule descente DFS en streaming</b>, conçu pour une
-/// empreinte mémoire quasi plate et un CPU dominé par l'I/O disque :
+/// Moteur d'audit en <b>une seule descente en profondeur, en streaming</b>, conçu pour
+/// une empreinte mémoire quasi plate et un CPU dominé par l'I/O disque :
 ///   • aucune carte d'ACL en mémoire (lecture du DACL brut élément par élément) ;
 ///   • résolution SID → nom mise en cache (une fois par identité unique) ;
-///   • source d'héritage résolue via la <b>pile d'ancêtres</b> du DFS (pas de carte
-///     globale ni de tri préalable) ;
+///   • source d'héritage résolue via la <b>pile d'ancêtres</b> (amorcée par les
+///     dossiers parents de la racine, pour nommer la vraie origine des droits hérités
+///     d'au-dessus du périmètre) ;
 ///   • tailles repliées dans une passe préalable légère (carte dossier → taille).
+///
+/// Fiabilité de la traversée : les éléments dont l'ACL est illisible sont conservés
+/// (marqués) plutôt que retirés — sinon leur sous-arbre lisible deviendrait orphelin ;
+/// les échecs d'énumération sont journalisés et marqués ; les boucles (liens DFS,
+/// liens suivis côté serveur) sont détectées par identité de répertoire ; une
+/// profondeur de sécurité protège la pile.
 ///
 /// Émet chaque <see cref="AuditItem"/> au fil de l'eau via le contrat
 /// <see cref="IAuditSink"/> (parents avant enfants).
@@ -44,6 +53,9 @@ public sealed class StreamingAuditEngine
     // Taille d'un lot de construction parallèle : borne la mémoire bufferisée sur les
     // répertoires à très large éventail, tout en gardant un parallélisme efficace.
     private const int ChunkSize = 512;
+    // Nombre maximal de descripteurs distincts gardés en cache (borne mémoire : quelques
+    // Mo au pire ; en pratique quelques centaines à quelques milliers par audit).
+    private const int AclCacheLimit = 20_000;
 
     private readonly IScanLog _log;
     private readonly IAdGroupResolver _ad;
@@ -59,12 +71,21 @@ public sealed class StreamingAuditEngine
     private SidNameResolver _resolver = new();
     private SecurityIdentifier? _machineSid;
     private readonly List<DirFrame> _ancestors = new(64);
+    private readonly TraversalGuard _guard = new();
+    private readonly ConcurrentDictionary<SdKey, ParsedAcl> _aclCache = new();
+    private int _aclCacheCount;
     private readonly HashSet<string> _adSams = new(StringComparer.OrdinalIgnoreCase);
+    private string _unknownSource = "Source inconnue";
     private int _maxDepth;
     private int _totalItems;
     private int _itemCount;
     private int _aceTotal;
     private int _reparseCount;
+    private int _dfsLinkCount;
+    private int _cycleCount;
+    private int _folderCount;
+    private int _fileCount;
+    private bool _abe;
     private Stopwatch _sw = new();
     private long _nextProgress;
 
@@ -81,7 +102,9 @@ public sealed class StreamingAuditEngine
         CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
-        string root = parameters.RootPath;
+        // Racine canonique : indispensable avant le préfixe \\?\ (qui désactive toute
+        // normalisation Win32). Idempotent si l'appelant l'a déjà normalisée.
+        string root = PathNormalizer.NormalizeRoot(parameters.RootPath);
 
         _p = parameters;
         _sink = sink;
@@ -91,10 +114,17 @@ public sealed class StreamingAuditEngine
         _itemCount = 0;
         _aceTotal = 0;
         _reparseCount = 0;
+        _dfsLinkCount = 0;
+        _cycleCount = 0;
         _folderCount = 0;
         _fileCount = 0;
+        _abe = false;
         _resolver = new SidNameResolver();
+        _unknownSource = CoreStrings.T(parameters.Lang, "Src_Unknown");
         _ancestors.Clear();
+        _guard.Reset();
+        _aclCache.Clear();
+        _aclCacheCount = 0;
         _adSams.Clear();
         _machineSid = parameters is { AuditRights: true, IncludeLocalAccounts: false }
             ? IdentityUtils.GetLocalMachineSid()
@@ -107,6 +137,13 @@ public sealed class StreamingAuditEngine
         };
 
         sink.Begin(parameters, root);
+
+        // Partage réseau : l'énumération basée sur l'accès (ABE) masque au compte d'audit
+        // ce qu'il ne peut pas lire — à signaler, car l'audit est alors incomplet sans erreur.
+        if (root.StartsWith(@"\\", StringComparison.Ordinal))
+        {
+            _abe = DetectAccessBasedEnumeration(root);
+        }
 
         // --- Passe 1 : préparation — détermine le TOTAL d'éléments à émettre (dénominateur
         //     de la barre de progression et de l'ETA), avant la passe lourde de lecture ACL.
@@ -125,12 +162,16 @@ public sealed class StreamingAuditEngine
             _totalItems = CountEmitItems(root, progress, cancellationToken);
         }
 
-        // --- Passe 2 : descente DFS profondeur-limitée, lecture ACL + émission au fil de l'eau ---
+        // --- Passe 2 : descente en profondeur, lecture ACL + émission au fil de l'eau ---
         _sw = Stopwatch.StartNew();
         _nextProgress = 0;
+        if (parameters.AuditRights)
+        {
+            SeedAncestorsAboveRoot(root);
+        }
         string rootName = root.TrimEnd('\\').Split('\\')[^1]; // « C:\ » → « C: »
         var rootBuilt = BuildItem(root, rootName, depth: 0, isFile: false, isReparse: false, fileSize: null);
-        VisitDirectory(rootBuilt, root, depth: 0);
+        VisitDirectory(rootBuilt, root, depth: 0, parentId: default, entry: null);
 
         ReportProgress(final: true);
         sw.Stop();
@@ -145,6 +186,9 @@ public sealed class StreamingAuditEngine
             ItemCount = _itemCount,
             AceTotal = _aceTotal,
             ReparseCount = _reparseCount,
+            DfsLinkCount = _dfsLinkCount,
+            CycleCount = _cycleCount,
+            AccessBasedEnumeration = _abe,
             AclErrorCount = _reader?.AclErrorCount ?? 0,
             AdErrorCount = (_ad as AdGroupResolver)?.AdErrorCount ?? 0,
             AdResolved = _adSams.Count,
@@ -155,7 +199,7 @@ public sealed class StreamingAuditEngine
         return summary;
     }
 
-    /// <summary>Variante de confort accumulant en mémoire (tests / banc de diff).</summary>
+    /// <summary>Variante de confort accumulant en mémoire (tests / banc de diagnostic).</summary>
     public AuditResult RunToList(
         AuditParameters parameters,
         IProgress<ScanProgress>? progress = null,
@@ -166,21 +210,19 @@ public sealed class StreamingAuditEngine
         return new AuditResult { Summary = summary, Items = sink.Items };
     }
 
-    private int _folderCount;
-    private int _fileCount;
-
     /// <summary>
     /// Comptage rapide des éléments à émettre (mode sans volumétrie) : même logique
-    /// d'arbre et de profondeur que la passe d'émission, mais sans lecture ACL ni
-    /// taille — juste pour connaître le total (dénominateur de progression / ETA).
+    /// d'arbre, de profondeur et de garde que la passe d'émission, mais sans lecture
+    /// ACL ni taille — juste pour connaître le total (dénominateur de progression / ETA).
     /// </summary>
     private int CountEmitItems(string root, IProgress<ScanProgress>? progress, CancellationToken ct)
     {
         int count = 0;
         var sw = Stopwatch.StartNew();
         long next = 0;
+        var guard = new TraversalGuard();
 
-        void Recurse(string dir, int depth)
+        void Recurse(string dir, int depth, DirIdentity parentId, FsEntry? entry)
         {
             ct.ThrowIfCancellationRequested();
             count++; // ce dossier
@@ -190,8 +232,13 @@ public sealed class StreamingAuditEngine
                     ScanPhase.EnumeratingFolders, CoreStrings.T(_p.Lang, "Prog_FoldersDiscovered", count)));
                 next = sw.ElapsedMilliseconds + ProgressThrottleMs;
             }
+            if (depth >= TraversalGuard.MaxDepth) { return; }
 
-            var children = FastDirectoryEnumerator.List(dir, out _);
+            bool readId = entry is null || entry.Value.IsReparse;
+            var children = FastDirectoryEnumerator.List(dir, readId, out _, out var opened);
+            var id = readId ? opened : parentId.Child(entry!.Value.FileId);
+            if (!guard.TryEnter(id, dir, children, out bool tracked)) { return; } // boucle : émis comme feuille
+
             if (_p.AuditFiles)
             {
                 foreach (var e in children)
@@ -206,33 +253,72 @@ public sealed class StreamingAuditEngine
                 {
                     if (!e.IsDirectory) { continue; }
                     if (e.IsNameSurrogate) { count++; } // jonction émise comme feuille
-                    else { Recurse(e.FullPath, depth + 1); }
+                    else { Recurse(e.FullPath, depth + 1, id, e); }
                 }
             }
+            guard.Leave(id, tracked);
         }
 
-        Recurse(root, 0);
+        Recurse(root, 0, default, null);
         return count;
     }
 
     /// <summary>
-    /// Visite un répertoire <b>normal</b> (non jonction) : émet son item (droits +
-    /// taille), empile son cadre d'héritage, puis traite ses fichiers et descend
-    /// dans ses sous-dossiers dans la limite de profondeur.
+    /// Visite un répertoire <b>normal</b> (non jonction) : le liste, vérifie l'absence de
+    /// boucle, émet son item (droits + taille + états), empile son cadre d'héritage, puis
+    /// traite ses fichiers et descend dans ses sous-dossiers dans la limite de profondeur.
     /// </summary>
-    private void VisitDirectory(Built dirBuilt, string path, int depth)
+    /// <param name="parentId">Identité du répertoire parent (volume + identifiant).</param>
+    /// <param name="entry">Entrée issue du listage du parent (null pour la racine).</param>
+    private void VisitDirectory(Built dirBuilt, string path, int depth, DirIdentity parentId, FsEntry? entry)
     {
         _ct.ThrowIfCancellationRequested();
+        var item = dirBuilt.Item;
+
+        // Profondeur de sécurité : protège la pile même si l'identité est inconnue.
+        if (depth >= TraversalGuard.MaxDepth)
+        {
+            item.Flags |= ItemFlags.DepthLimit;
+            _log.Write("ENUM_PROFONDEUR_MAX", path,
+                $"Profondeur de sécurité ({TraversalGuard.MaxDepth} niveaux) atteinte : contenu non parcouru");
+            EmitBuilt(dirBuilt);
+            _folderCount++;
+            return;
+        }
+
+        // Listage. L'identité est lue sur le handle pour la racine et pour les points de
+        // reparse parcourus (liens DFS, espaces cloud), qui peuvent changer de volume ;
+        // sinon elle découle du listage du parent (même volume, aucun appel système).
+        bool readIdentity = entry is null || entry.Value.IsReparse;
+        var children = FastDirectoryEnumerator.List(path, readIdentity, out int error, out DirIdentity opened);
+        DirIdentity id = readIdentity ? opened : parentId.Child(entry!.Value.FileId);
+
+        if (!_guard.TryEnter(id, path, children, out bool tracked))
+        {
+            item.Flags |= ItemFlags.Cycle;
+            _cycleCount++;
+            _log.Write("ENUM_BOUCLE", path,
+                "Boucle détectée : ce dossier réapparaît dans sa propre ascendance (contenu non parcouru)");
+            EmitBuilt(dirBuilt);
+            _folderCount++;
+            return;
+        }
+        if (error != NativeMethods.ERROR_SUCCESS)
+        {
+            item.Flags |= ItemFlags.ContentUnreadable;
+            LogEnumError(path, error, partial: children.Count > 0);
+        }
+        if (entry is { IsDfsLink: true })
+        {
+            _dfsLinkCount++;
+        }
 
         // Émission séquentielle du dossier lui-même (déjà construit par l'appelant).
         EmitBuilt(dirBuilt);
         _folderCount++;
 
-        // Le cadre est empilé même si l'item n'a pas pu être émis (ACL illisible) :
-        // ses clés seront vides et ne serviront alors jamais de source (parité).
+        // Cadre d'héritage : empilé même si l'ACL est illisible (clés vides, jamais source).
         _ancestors.Add(new DirFrame(path, dirBuilt.Keys));
-
-        var children = FastDirectoryEnumerator.List(path, out _);
 
         // Fichiers du dossier : construits en parallèle PAR LOTS, émis en séquence.
         if (_p.AuditFiles)
@@ -279,14 +365,27 @@ public sealed class StreamingAuditEngine
                     }
                     else
                     {
-                        VisitDirectory(built[i], e.FullPath, depth + 1); // émet en séquence à l'intérieur
+                        VisitDirectory(built[i], e.FullPath, depth + 1, id, e); // émet en séquence à l'intérieur
                     }
                 }
             }
         }
 
         _ancestors.RemoveAt(_ancestors.Count - 1);
+        _guard.Leave(id, tracked);
         ReportProgress(final: false);
+    }
+
+    private void LogEnumError(string path, int error, bool partial)
+    {
+        string type = error switch
+        {
+            NativeMethods.ERROR_ACCESS_DENIED => "ENUM_ACCES_REFUSE",
+            NativeMethods.ERROR_FILE_NOT_FOUND or NativeMethods.ERROR_PATH_NOT_FOUND => "ENUM_CHEMIN_INTROUVABLE",
+            _ => "ENUM_ERREUR",
+        };
+        string what = partial ? "Contenu du dossier listé partiellement" : "Contenu du dossier non listable";
+        _log.Write(type, path, $"{what} : {Win32Text.Describe(error)}");
     }
 
     /// <summary>
@@ -320,14 +419,20 @@ public sealed class StreamingAuditEngine
     {
         bool isReparse = !isFile && e.IsNameSurrogate;
         long? size = isFile ? (e.IsNameSurrogate ? null : e.Size) : null;
-        return BuildItem(e.FullPath, e.Name, depth, isFile, isReparse, size);
+        var built = BuildItem(e.FullPath, e.Name, depth, isFile, isReparse, size);
+        if (!isFile && e.IsDfsLink)
+        {
+            built.Item.Flags |= ItemFlags.DfsLink;
+        }
+        return built;
     }
 
     /// <summary>
     /// Construit un item complet (enveloppe + taille + ACL traduites) <b>sans
     /// l'émettre</b> ni résoudre l'AD (différés à <see cref="EmitBuilt"/>, séquentiel).
-    /// Thread-safe. En mode Droits, une ACL illisible donne un <see cref="Built"/> vide
-    /// (item non émis ensuite).
+    /// Thread-safe. Une ACL illisible donne un item <b>conservé</b>, sans ACE et marqué
+    /// <see cref="ItemFlags.AclUnreadable"/> : le retirer rendrait orphelin tout son
+    /// sous-arbre lisible (invisible dans l'arbre), voire ferait perdre la racine.
     /// </summary>
     private Built BuildItem(
         string path, string name, int depth, bool isFile, bool isReparse, long? fileSize)
@@ -357,28 +462,126 @@ public sealed class StreamingAuditEngine
             }
         }
 
-        // Droits : lecture des règles (en SID) + construction des ACE traduites.
+        // Droits : descripteur brut → ACL analysée (en cache) → ACE de cet élément.
         if (_p.AuditRights)
         {
-            var rules = _reader!.TryReadRules(path, isDirectory: !isFile);
-            if (rules is null)
+            var parsed = GetParsedAcl(path, isDirectory: !isFile, out bool nullDacl);
+            if (parsed is null)
             {
-                return new Built(null, EmptyKeys); // ACL illisible → item non émis
+                item.Flags |= ItemFlags.AclUnreadable;
+                return new Built(item, EmptyKeys);
             }
-            var keys = BuildAces(item, path, rules);
-            return new Built(item, keys);
+            if (parsed.ParseError is not null)
+            {
+                _log.Write("ACL_ACCESS_ERREUR", path, $"Impossible de lire les règles d'accès : {parsed.ParseError}");
+                item.Flags |= ItemFlags.AclUnreadable;
+                return new Built(item, EmptyKeys);
+            }
+            if (nullDacl)
+            {
+                item.Flags |= ItemFlags.NullDacl;
+            }
+            ApplyAcl(item, path, parsed);
+            return new Built(item, parsed.ExplicitKeys);
         }
 
         return new Built(item, EmptyKeys);
     }
 
+    /// <summary>
+    /// Lit le descripteur de sécurité d'un chemin et renvoie son ACL analysée. L'analyse
+    /// (canonicalisation .NET, résolution des noms, filtrage, traduction) est faite UNE fois
+    /// par descripteur distinct : la plupart des éléments partagent un descripteur identique
+    /// octet pour octet (droits hérités) — c'est l'essentiel du coût CPU et des allocations.
+    /// Null si le descripteur est illisible.
+    /// </summary>
+    private ParsedAcl? GetParsedAcl(string path, bool isDirectory, out bool nullDacl, bool quiet = false)
+    {
+        byte[]? sd = _reader!.TryReadDescriptor(path, out nullDacl, quiet);
+        if (sd is null)
+        {
+            return null;
+        }
+        var key = new SdKey(sd, isDirectory);
+        if (_aclCache.TryGetValue(key, out var cached))
+        {
+            return cached;
+        }
+        var parsed = ParseAcl(sd, isDirectory);
+        // Borne mémoire : au-delà, analyse sans mise en cache (arbres à ACL toutes distinctes).
+        if (Volatile.Read(ref _aclCacheCount) < AclCacheLimit && _aclCache.TryAdd(key, parsed))
+        {
+            Interlocked.Increment(ref _aclCacheCount);
+        }
+        return parsed;
+    }
+
+    /// <summary>
+    /// Analyse un descripteur : ACE retenues (filtrage par SID), traduites, avec leur clé de
+    /// rapprochement ; clés des ACE explicites ; erreurs d'ACE à rejouer pour chaque élément.
+    /// Indépendant de l'élément (la source d'héritage, elle, est résolue par élément).
+    /// </summary>
+    private ParsedAcl ParseAcl(byte[] sd, bool isDirectory)
+    {
+        AuthorizationRuleCollection rules;
+        try
+        {
+            rules = StreamingAclReader.ParseRules(sd, isDirectory);
+        }
+        catch (Exception ex)
+        {
+            return new ParsedAcl(Array.Empty<ParsedAce>(), EmptyKeys, null, ex.Message);
+        }
+
+        var aces = new List<ParsedAce>(rules.Count);
+        HashSet<string>? explicitKeys = null;
+        List<string>? errors = null;
+        foreach (var rule in rules)
+        {
+            if (rule is not FileSystemAccessRule fsRule)
+            {
+                continue;
+            }
+            // Une ACE malformée ne doit jamais interrompre le traitement des autres : elle est
+            // écartée et signalée (le message est rejoué pour chaque élément concerné).
+            try
+            {
+                if (!TryMatchKey(fsRule, out string idValue, out string mapKey))
+                {
+                    continue;
+                }
+                bool inherited = fsRule.IsInherited;
+                // « Source = soi-même » si l'élément porte AUSSI cette ACE en explicite, parmi
+                // celles déjà rencontrées (ordre du DACL, même sémantique que l'ordre canonique).
+                bool selfSource = false;
+                if (!inherited)
+                {
+                    (explicitKeys ??= new HashSet<string>(StringComparer.Ordinal)).Add(mapKey);
+                }
+                else
+                {
+                    selfSource = explicitKeys?.Contains(mapKey) == true;
+                }
+                aces.Add(new ParsedAce(
+                    idValue,
+                    fsRule.AccessControlType == AccessControlType.Deny,
+                    NtfsRightsTranslator.Translate(fsRule.FileSystemRights, _p.Lang),
+                    InheritanceScopeTranslator.Translate(fsRule.InheritanceFlags, fsRule.PropagationFlags, _p.Lang),
+                    inherited,
+                    mapKey,
+                    selfSource));
+            }
+            catch (Exception ex)
+            {
+                (errors ??= new List<string>()).Add($"ACE illisible ignorée : {ex.Message}");
+            }
+        }
+        return new ParsedAcl(aces, explicitKeys ?? EmptyKeys, errors, null);
+    }
+
     /// <summary>Émission séquentielle : résolution AD, écriture au puits, compteurs.</summary>
     private void EmitBuilt(Built b)
     {
-        if (b.Item is null)
-        {
-            return; // ACL illisible : élément non émis (cohérent avec la lecture des droits)
-        }
         if (_ad.IsAvailable)
         {
             ApplyAd(b.Item);
@@ -389,100 +592,100 @@ public sealed class StreamingAuditEngine
     }
 
     /// <summary>
-    /// Traduit les ACE brutes en <see cref="AceEntry"/> (filtrage par SID, droits /
-    /// portée localisés, source d'héritage via la pile d'ancêtres) et les ajoute à
-    /// l'item. Renvoie les clés des ACE explicites de cet élément.
+    /// Matérialise l'ACL analysée pour CET élément : une <see cref="AceEntry"/> par ACE
+    /// (objet propre à l'élément : l'AD y ajoute les membres), la source d'héritage étant
+    /// résolue via la pile d'ancêtres de l'élément. Les erreurs d'ACE sont rejouées ici.
     /// </summary>
-    private HashSet<string> BuildAces(AuditItem item, string path, AuthorizationRuleCollection rules)
+    private void ApplyAcl(AuditItem item, string path, ParsedAcl parsed)
     {
-        HashSet<string>? explicitKeys = null;
-
-        foreach (var rule in rules)
+        foreach (var a in parsed.Aces)
         {
-            if (rule is not FileSystemAccessRule fsRule)
+            item.Acl.Add(new AceEntry
             {
-                continue;
-            }
-
-            // Une ACE malformée (SID/droits illisibles) ne doit jamais interrompre le
-            // traitement des autres ACE de l'élément — d'autant qu'on construit en
-            // parallèle (une exception remonterait en AggregateException et planterait
-            // l'audit). On journalise et on poursuit avec les autres ACE.
-            try
+                Identity = a.Identity,
+                Type = a.IsDeny ? AceType.Deny : AceType.Allow,
+                RightsFr = a.Rights,
+                ScopeFr = a.Scope,
+                IsInherited = a.IsInherited,
+                // Explicite : source = l'élément lui-même, non stockée (vide, redondante).
+                SourcePath = !a.IsInherited ? string.Empty
+                    : a.SelfSource ? path
+                    : ResolveInheritanceSource(a.MapKey),
+            });
+            if (a.IsDeny)
             {
-                var sid = (SecurityIdentifier)fsRule.IdentityReference;
-                string idValue = _resolver.Resolve(sid);
-                if (string.IsNullOrEmpty(idValue))
-                {
-                    continue;
-                }
-
-                // Filtrage « domaine uniquement » par SID (indépendant de la langue).
-                if (!_p.IncludeLocalAccounts && !IdentityUtils.IsDomainSid(sid, _machineSid))
-                {
-                    continue;
-                }
-
-                int mask = (int)fsRule.FileSystemRights;
-                bool inherited = fsRule.IsInherited;
-                bool isDeny = fsRule.AccessControlType == AccessControlType.Deny;
-                int aceTypeInt = isDeny ? 1 : 0;
-                // Clé normalisée (générique → spécifique) pour que les ACE héritées sous
-                // forme spécifique retrouvent leur ancêtre stocké sous forme générique.
-                string mapKey = $"{idValue}|{AccessMask.NormalizeForMatch(mask)}|{aceTypeInt}";
-
-                // Droit EXPLICITE : la source est l'élément lui-même → non stockée (vide),
-                // redondante et inutile à l'affichage. On enregistre tout de même la clé
-                // pour que les ACE héritées des descendants la retrouvent.
-                // Droit HÉRITÉ : on résout l'ancêtre source.
-                string source;
-                if (!inherited)
-                {
-                    (explicitKeys ??= new HashSet<string>(StringComparer.Ordinal)).Add(mapKey);
-                    source = string.Empty;
-                }
-                else
-                {
-                    source = ResolveInheritanceSource(mapKey, path, explicitKeys);
-                }
-
-                item.Acl.Add(new AceEntry
-                {
-                    Identity = idValue,
-                    Type = isDeny ? AceType.Deny : AceType.Allow,
-                    RightsFr = NtfsRightsTranslator.Translate(fsRule.FileSystemRights, _p.Lang),
-                    ScopeFr = InheritanceScopeTranslator.Translate(
-                        fsRule.InheritanceFlags, fsRule.PropagationFlags, _p.Lang),
-                    IsInherited = inherited,
-                    SourcePath = source,
-                });
-                if (isDeny)
-                {
-                    item.HasDeny = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.Write("ERREUR_ACE", path, $"ACE illisible ignorée : {ex.Message}");
+                item.HasDeny = true;
             }
         }
-
-        return explicitKeys ?? EmptyKeys;
+        if (parsed.AceErrors is not null)
+        {
+            foreach (string message in parsed.AceErrors)
+            {
+                _log.Write("ERREUR_ACE", path, message);
+            }
+        }
     }
 
     /// <summary>
-    /// Source d'héritage : une ACE explicite est sa propre source ; une ACE héritée
-    /// retrouve l'ancêtre explicite le plus proche (pile, du plus profond au plus
-    /// haut), ou cet élément lui-même s'il la définit aussi explicitement, sinon
-    /// « Source inconnue » (libellé d'origine conservé tel quel).
+    /// Nom de l'identité et clé de rapprochement d'une règle, après filtrage (identité
+    /// irrésoluble, filtre « domaine uniquement »). Faux si la règle est écartée.
     /// </summary>
-    private string ResolveInheritanceSource(
-        string mapKey, string path, HashSet<string>? selfExplicitKeys)
+    private bool TryMatchKey(FileSystemAccessRule rule, out string idValue, out string mapKey)
     {
-        if (selfExplicitKeys is not null && selfExplicitKeys.Contains(mapKey))
+        mapKey = string.Empty;
+        var sid = (SecurityIdentifier)rule.IdentityReference;
+        idValue = _resolver.Resolve(sid);
+        if (string.IsNullOrEmpty(idValue))
         {
-            return path;
+            return false;
         }
+        // Filtrage « domaine uniquement » par SID (indépendant de la langue).
+        if (!_p.IncludeLocalAccounts && !IdentityUtils.IsDomainSid(sid, _machineSid))
+        {
+            return false;
+        }
+        int mask = (int)rule.FileSystemRights;
+        int aceTypeInt = rule.AccessControlType == AccessControlType.Deny ? 1 : 0;
+        // Clé normalisée (générique → spécifique) pour que les ACE héritées sous forme
+        // spécifique retrouvent leur ancêtre stocké sous forme générique.
+        mapKey = $"{idValue}|{AccessMask.NormalizeForMatch(mask)}|{aceTypeInt}";
+        return true;
+    }
+
+    /// <summary>
+    /// Amorce la pile d'ancêtres avec les dossiers <b>au-dessus</b> de la racine (jusqu'à la
+    /// racine du lecteur ou du partage) : les droits hérités d'au-delà du périmètre audité
+    /// retrouvent alors leur vraie origine (ex. « C:\Users\PC ») au lieu de « Source
+    /// inconnue ». Lectures silencieuses : un parent illisible est simplement ignoré.
+    /// </summary>
+    private void SeedAncestorsAboveRoot(string root)
+    {
+        if (root.StartsWith(@"\\?\", StringComparison.Ordinal) || root.StartsWith(@"\\.\", StringComparison.Ordinal))
+        {
+            return;
+        }
+        var parents = new List<string>();
+        for (string? cur = Path.GetDirectoryName(root); !string.IsNullOrEmpty(cur); cur = Path.GetDirectoryName(cur))
+        {
+            parents.Add(cur);
+        }
+        for (int i = parents.Count - 1; i >= 0; i--) // du plus haut au plus proche
+        {
+            var parsed = GetParsedAcl(parents[i], isDirectory: true, out _, quiet: true);
+            if (parsed is { ParseError: null, ExplicitKeys.Count: > 0 })
+            {
+                _ancestors.Add(new DirFrame(parents[i], parsed.ExplicitKeys));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Source d'héritage d'une ACE héritée : l'ancêtre explicite le plus proche (pile, du
+    /// plus profond au plus haut — y compris les parents de la racine), sinon « Source
+    /// inconnue ». (Le cas « l'élément la porte aussi en explicite » est traité à l'analyse.)
+    /// </summary>
+    private string ResolveInheritanceSource(string mapKey)
+    {
         for (int i = _ancestors.Count - 1; i >= 0; i--)
         {
             if (_ancestors[i].ExplicitKeys.Contains(mapKey))
@@ -490,7 +693,7 @@ public sealed class StreamingAuditEngine
                 return _ancestors[i].Path;
             }
         }
-        return "Source inconnue";
+        return _unknownSource;
     }
 
     private void ApplyAd(AuditItem item)
@@ -503,6 +706,47 @@ public sealed class StreamingAuditEngine
             }
         }
         _ad.ApplyMembers(item);
+    }
+
+    /// <summary>
+    /// Vrai si le partage de la racine UNC applique l'énumération basée sur l'accès (ABE),
+    /// qui masque au compte d'audit les éléments qu'il ne peut pas lire. Journalisé en
+    /// avertissement. Meilleur effort : tout échec de la requête est ignoré.
+    /// </summary>
+    private bool DetectAccessBasedEnumeration(string root)
+    {
+        string[] parts = root.TrimStart('\\').Split('\\');
+        if (parts.Length < 2 || parts[0] is "?" or ".")
+        {
+            return false;
+        }
+        try
+        {
+            if (NativeMethods.NetShareGetInfo(parts[0], parts[1], 1005, out IntPtr buffer) != 0 || buffer == IntPtr.Zero)
+            {
+                return false;
+            }
+            try
+            {
+                uint flags = unchecked((uint)Marshal.ReadInt32(buffer));
+                if ((flags & NativeMethods.SHI1005_FLAGS_ACCESS_BASED_DIRECTORY_ENUM) == 0)
+                {
+                    return false;
+                }
+                _log.Write("PARTAGE_ABE", $@"\\{parts[0]}\{parts[1]}",
+                    "Énumération basée sur l'accès (ABE) active sur le partage : les éléments que le compte " +
+                    "d'audit ne peut pas lire lui sont invisibles, donc absents de l'audit");
+                return true;
+            }
+            finally
+            {
+                NativeMethods.NetApiBufferFree(buffer);
+            }
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -536,17 +780,49 @@ public sealed class StreamingAuditEngine
 
     private static readonly HashSet<string> EmptyKeys = new(StringComparer.Ordinal);
 
-    /// <summary>Item construit prêt à émettre : l'item (null si ACL illisible) + ses clés d'ACE explicites.</summary>
+    /// <summary>Item construit prêt à émettre + ses clés d'ACE explicites.</summary>
     private readonly struct Built
     {
-        public Built(AuditItem? item, HashSet<string> keys)
+        public Built(AuditItem item, HashSet<string> keys)
         {
             Item = item;
             Keys = keys;
         }
 
-        public AuditItem? Item { get; }
+        public AuditItem Item { get; }
         public HashSet<string> Keys { get; }
+    }
+
+    /// <summary>ACE analysée d'un descripteur, indépendante de l'élément qui le porte.</summary>
+    private readonly record struct ParsedAce(
+        string Identity, bool IsDeny, string Rights, string Scope, bool IsInherited, string MapKey, bool SelfSource);
+
+    /// <summary>ACL analysée d'un descripteur (partagée, en lecture seule, entre éléments).</summary>
+    private sealed record ParsedAcl(
+        IReadOnlyList<ParsedAce> Aces, HashSet<string> ExplicitKeys, IReadOnlyList<string>? AceErrors, string? ParseError);
+
+    /// <summary>Clé de cache : octets du descripteur + nature (dossier / fichier : l'analyse .NET diffère).</summary>
+    private readonly struct SdKey : IEquatable<SdKey>
+    {
+        private readonly byte[] _sd;
+        private readonly bool _isDirectory;
+        private readonly int _hash;
+
+        public SdKey(byte[] sd, bool isDirectory)
+        {
+            _sd = sd;
+            _isDirectory = isDirectory;
+            var h = new HashCode();
+            h.AddBytes(sd);
+            h.Add(isDirectory);
+            _hash = h.ToHashCode();
+        }
+
+        public bool Equals(SdKey other)
+            => _hash == other._hash && _isDirectory == other._isDirectory && _sd.AsSpan().SequenceEqual(other._sd);
+
+        public override bool Equals(object? obj) => obj is SdKey k && Equals(k);
+        public override int GetHashCode() => _hash;
     }
 
     /// <summary>Cadre d'un dossier sur la pile d'ancêtres : chemin + clés d'ACE explicites.</summary>
