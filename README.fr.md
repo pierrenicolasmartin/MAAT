@@ -40,16 +40,16 @@ proposés — un installeur MSI et un package portable sans installation :
 
 | Artefact | Description | VirusTotal |
 |---|---|:--:|
-| **`MAAT-1.1.0-x64.msi`** | Installeur (Windows x64, runtime .NET 8 inclus) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/01a2196ce660e7a2db20905d73f913bc426b474e2e6ebe457b8aa1572e330c73) |
-| **`MAAT-1.1.0-portable-x64.zip`** | Package portable (sans installation) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/0e94dd116ba9f165100e381b68f2ebd98f2684ac41b45e1938c73b3f128a7755) |
-| &nbsp;&nbsp;└ **`MAAT.exe`** | Exécutable portable (dans le ZIP) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7) |
+| **`MAAT-1.2.0-x64.msi`** | Installeur (Windows x64, runtime .NET 8 inclus) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/2c46d9d163cf8b19b3b6838194627197cba2d1dae8794a0d84458e2b13fba5d2) |
+| **`MAAT-1.2.0-portable-x64.zip`** | Package portable (sans installation) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/43eea31a0c246b24afcc9ec0efca4ad8ce0a0a9ea9f797574c96dddb6aa31a1d) |
+| &nbsp;&nbsp;└ **`MAAT.exe`** | Exécutable portable (dans le ZIP) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/4166bcbea74ae04454234dcc281666febe1e6d0f1221655afbc9c04d8f83f5e1) |
 
 Intégrité — SHA-256 :
 
 ```
-01a2196ce660e7a2db20905d73f913bc426b474e2e6ebe457b8aa1572e330c73  MAAT-1.1.0-x64.msi
-0e94dd116ba9f165100e381b68f2ebd98f2684ac41b45e1938c73b3f128a7755  MAAT-1.1.0-portable-x64.zip
-f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7  MAAT.exe
+2c46d9d163cf8b19b3b6838194627197cba2d1dae8794a0d84458e2b13fba5d2  MAAT-1.2.0-x64.msi
+43eea31a0c246b24afcc9ec0efca4ad8ce0a0a9ea9f797574c96dddb6aa31a1d  MAAT-1.2.0-portable-x64.zip
+4166bcbea74ae04454234dcc281666febe1e6d0f1221655afbc9c04d8f83f5e1  MAAT.exe
 ```
 
 ---
