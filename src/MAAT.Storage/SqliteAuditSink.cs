@@ -28,8 +28,10 @@ public sealed class SqliteAuditSink : IAuditSink, IDisposable
     private readonly SqliteConnection _conn;
 
     // Chemin de dossier → id de ligne fs_item (seuls les dossiers peuvent être parents).
+    // Comparaison ORDINALE : dans un dossier sensible à la casse, « Foo » et « foo » sont
+    // deux dossiers distincts ; les chemins sont construits de façon cohérente par le moteur.
     private readonly Dictionary<string, long> _folderIds =
-        new(StringComparer.OrdinalIgnoreCase);
+        new(StringComparer.Ordinal);
 
     private SqliteTransaction? _tx;
     private SqliteCommand? _itemCmd;
@@ -118,7 +120,7 @@ public sealed class SqliteAuditSink : IAuditSink, IDisposable
         cmd.Parameters.AddWithValue("$taille", p.AuditSize ? 1 : 0);
         cmd.Parameters.AddWithValue("$started", DateTimeOffset.UtcNow.ToString("O"));
         cmd.Parameters.AddWithValue("$version",
-            Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.1.0");
+            Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.2.0");
         cmd.Parameters.AddWithValue("$machine", Environment.MachineName);
         cmd.Parameters.AddWithValue("$user", Environment.UserName);
         return (long)cmd.ExecuteScalar()!;
@@ -131,14 +133,14 @@ public sealed class SqliteAuditSink : IAuditSink, IDisposable
         _itemCmd.CommandText = """
             INSERT INTO fs_item
                 (run_id, parent_id, full_path, name, depth, is_file, is_reparse,
-                 size_bytes, size_partial, has_deny)
+                 size_bytes, size_partial, has_deny, flags)
             VALUES
                 ($run, $parent, $path, $name, $depth, $file, $reparse,
-                 $size, $partial, $deny)
+                 $size, $partial, $deny, $flags)
             RETURNING id;
             """;
         AddParams(_itemCmd, "$run", "$parent", "$path", "$name", "$depth",
-            "$file", "$reparse", "$size", "$partial", "$deny");
+            "$file", "$reparse", "$size", "$partial", "$deny", "$flags");
         _itemCmd.Prepare();
 
         _aceCmd = _conn.CreateCommand();
@@ -168,6 +170,7 @@ public sealed class SqliteAuditSink : IAuditSink, IDisposable
         c.Parameters["$size"].Value = (object?)item.SizeBytes ?? DBNull.Value;
         c.Parameters["$partial"].Value = item.SizePartial ? 1 : 0;
         c.Parameters["$deny"].Value = item.HasDeny ? 1 : 0;
+        c.Parameters["$flags"].Value = (int)item.Flags;
         return (long)c.ExecuteScalar()!;
     }
 

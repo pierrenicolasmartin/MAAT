@@ -1,0 +1,7 @@
+<Project>
+  <!-- Version unique de toutes les assemblies MAAT (À propos, version enregistrée dans
+       chaque audit). À aligner avec installer\Package.wxs et les scripts de build. -->
+  <PropertyGroup>
+    <Version>1.2.0</Version>
+  </PropertyGroup>
+</Project>

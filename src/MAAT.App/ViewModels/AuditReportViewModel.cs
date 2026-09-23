@@ -39,12 +39,18 @@ public sealed class AuditReportViewModel : ObservableObject
         FinishedText = L2("Rep_FinishedMeta", AuditDate);
         DurationText = L2("Rep_DurationMeta", FormatDuration(summary.Elapsed));
 
-        // ── Compteurs réels ──
-        ErrorCount = _log.Count(e => e.Severity == LogSeverity.Error);
-        WarnCount = _log.Count(e => e.Severity == LogSeverity.Warn);
-        IssueCount = _log.Count;
-        int deniedCount = _log.Count(e => IssueRow.CategoryKey(e.Type) == "Log_AccessDenied");
-        int readErrorCount = _log.Count(e => IssueRow.CategoryKey(e.Type) == "Log_ReadError");
+        // ── Problèmes DÉDOUBLONNÉS par (motif, chemin) : un même dossier peut être signalé
+        //    par les deux passes (tailles puis droits) ou par deux lectures (ACL et contenu).
+        //    On compte des problèmes, pas des lignes de journal (l'export garde le journal brut). ──
+        var issues = _log
+            .GroupBy(e => (IssueRow.CategoryKey(e.Type), e.Path))
+            .Select(g => g.OrderByDescending(e => e.Severity).First())
+            .ToList();
+        ErrorCount = issues.Count(e => e.Severity == LogSeverity.Error);
+        WarnCount = issues.Count(e => e.Severity == LogSeverity.Warn);
+        IssueCount = issues.Count;
+        int deniedCount = issues.Count(e => IssueRow.CategoryKey(e.Type) == "Log_AccessDenied");
+        int readErrorCount = issues.Count(e => IssueRow.CategoryKey(e.Type) == "Log_ReadError");
 
         // ── Verdict (déduit du résultat) ──
         Verdict = ErrorCount > 0 ? "error" : IssueCount == 0 ? "success" : "warning";
@@ -65,15 +71,29 @@ public sealed class AuditReportViewModel : ObservableObject
         {
             Signals.Add(new(summary.ReparseCount.ToString("N0"), L("Rep_Sig_JunctionTitle"), L("Rep_Sig_JunctionSub"), tone: "neutral"));
         }
+        if (summary.DfsLinkCount > 0)
+        {
+            Signals.Add(new(summary.DfsLinkCount.ToString("N0"), L("Rep_Sig_DfsTitle"), L("Rep_Sig_DfsSub"), tone: "neutral"));
+        }
+        if (summary.CycleCount > 0)
+        {
+            Signals.Add(new(summary.CycleCount.ToString("N0"), L("Rep_Sig_CycleTitle"), L("Rep_Sig_CycleSub"), tone: "warn"));
+        }
+        if (summary.AccessBasedEnumeration)
+        {
+            Signals.Add(new SignalTile(null, L("Rep_Sig_AbeTitle"), L("Rep_Sig_AbeSub"), tone: "warn", icon: "!"));
+        }
         if (summary.Parameters.AuditRights)
         {
             Signals.Add(summary.AdAvailable
                 ? new SignalTile(null, L("Rep_Sig_AdTitle"), L("Rep_Sig_AdOn"), tone: "ok", icon: "✓")
                 : new SignalTile(null, L("Rep_Sig_AdTitle"), L("Rep_Sig_AdOff"), tone: "warn", icon: "!"));
         }
+        // Une seule rangée jusqu'à 4 tuiles ; au-delà, rangées équilibrées (5-6 → 3+3, 7-8 → 4+4).
+        SignalColumns = Signals.Count <= 4 ? Math.Max(1, Signals.Count) : (Signals.Count + 1) / 2;
 
         // ── Table des éléments non audités (erreurs d'abord) ──
-        AllIssues = _log.OrderByDescending(e => e.Severity).Select(e => new IssueRow(e)).ToList();
+        AllIssues = issues.OrderByDescending(e => e.Severity).Select(e => new IssueRow(e, summary.RootPath)).ToList();
         Issues = new ObservableCollection<IssueRow>(AllIssues.Take(PreviewCount));
 
         ShowAllCommand = new RelayCommand(ShowAll, () => HasMore);
@@ -91,6 +111,9 @@ public sealed class AuditReportViewModel : ObservableObject
 
     public ObservableCollection<SignalTile> Signals { get; }
     public bool HasSignals => Signals.Count > 0;
+
+    /// <summary>Colonnes de la rangée de signaux : 4 au plus, puis retour à la ligne.</summary>
+    public int SignalColumns { get; }
 
     private IReadOnlyList<IssueRow> AllIssues { get; }
     public ObservableCollection<IssueRow> Issues { get; }
@@ -186,11 +209,12 @@ public sealed class SignalTile
 /// <summary>Une ligne « élément non audité » : motif localisé, chemin, gravité, teinte du badge.</summary>
 public sealed class IssueRow
 {
-    public IssueRow(ScanLogEntry e)
+    public IssueRow(ScanLogEntry e, string? root = null)
     {
         IsError = e.Severity == LogSeverity.Error;
         Reason = CategoryLabel(e.Type);
         Path = string.IsNullOrEmpty(e.Path) ? "—" : e.Path;
+        DisplayPath = RelativeToRoot(Path, root);
         SeverityText = LocalizationManager.T(IsError ? "Sev_Error" : "Sev_Warn");
 
         string key = CategoryKey(e.Type);
@@ -201,8 +225,26 @@ public sealed class IssueRow
     public bool IsError { get; }
     public bool BadgeRed { get; }
     public string Reason { get; }
+    /// <summary>Chemin complet (info-bulle, export du journal).</summary>
     public string Path { get; }
+
+    /// <summary>
+    /// Chemin affiché : relatif à la racine auditée (« …\sous\dossier ») pour que les lignes
+    /// restent distinctes quand la racine est longue ; la racine elle-même reste entière.
+    /// </summary>
+    public string DisplayPath { get; }
+
     public string SeverityText { get; }
+
+    private static string RelativeToRoot(string path, string? root)
+    {
+        if (string.IsNullOrEmpty(root)) { return path; }
+        string r = root.TrimEnd('\\');
+        return path.Length > r.Length + 1 && path[r.Length] == '\\'
+               && path.StartsWith(r, StringComparison.OrdinalIgnoreCase)
+            ? "…" + path[r.Length..]
+            : path;
+    }
 
     /// <summary>Clé de catalogue (non localisée) du motif, pour regrouper et traduire.</summary>
     public static string CategoryKey(string code) => code switch
@@ -210,6 +252,9 @@ public sealed class IssueRow
         "ENUM_ACCES_REFUSE" or "ACL_ACCES_REFUSE" or "TAILLE_ACCES_REFUSE" => "Log_AccessDenied",
         "ENUM_CHEMIN_INTROUVABLE" or "ACL_CHEMIN_INTROUVABLE" or "TAILLE_CHEMIN_INTROUVABLE" => "Log_PathNotFound",
         "ENUM_REPARSE_IGNORE" or "TAILLE_REPARSE_IGNORE" => "Log_ReparseSkipped",
+        "ENUM_BOUCLE" => "Log_Cycle",
+        "ENUM_PROFONDEUR_MAX" => "Log_DepthLimit",
+        "PARTAGE_ABE" => "Log_Abe",
         "ACL_INACCESSIBLE" => "Log_AclUnreadable",
         "ERREUR_ACE" => "Log_AceError",
         "AD_CYCLE" or "AD_ERREUR" or "AD_PROFONDEUR_MAX" or "AD_TIMEOUT" => "Log_AdResolution",

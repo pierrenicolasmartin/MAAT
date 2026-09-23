@@ -8,7 +8,7 @@ the **NTFS permissions (ACLs)** of every item, computes **sizes** and resolves
 **Active Directory groups** (nested memberships), then presents everything in an
 interactive interface and exportable reports.
 
-> Status: version 1.1.0 — feature-complete.
+> Status: version 1.2.0 — feature-complete.
 > License: **GNU GPL v3**.
 
 ---
@@ -40,16 +40,16 @@ available — an MSI installer and a no-install portable package:
 
 | Artifact | Description | VirusTotal |
 |---|---|:--:|
-| **`MAAT-1.1.0-x64.msi`** | Installer (Windows x64, .NET 8 runtime included) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-report-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/01a2196ce660e7a2db20905d73f913bc426b474e2e6ebe457b8aa1572e330c73) |
-| **`MAAT-1.1.0-portable-x64.zip`** | Portable package (no installation) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-report-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/0e94dd116ba9f165100e381b68f2ebd98f2684ac41b45e1938c73b3f128a7755) |
-| &nbsp;&nbsp;└ **`MAAT.exe`** | Portable executable (inside the ZIP) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-report-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7) |
+| **`MAAT-1.2.0-x64.msi`** | Installer (Windows x64, .NET 8 runtime included) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-report-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/13baa2698f6020c1df8d748c9846ceb05d3086c77a719c92a1c35f472d73e6aa) |
+| **`MAAT-1.2.0-portable-x64.zip`** | Portable package (no installation) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-report-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/d2e202cbbf46aa08b73652cdba57a713432dbc4c3bbc831fae08bcc7778f477b) |
+| &nbsp;&nbsp;└ **`MAAT.exe`** | Portable executable (inside the ZIP) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-report-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/78e2bd2922ac5c5cdeff071b8a15c06c9f6a38d17dc7494627d0c6075bfcb35c) |
 
 Integrity — SHA-256:
 
 ```
-01a2196ce660e7a2db20905d73f913bc426b474e2e6ebe457b8aa1572e330c73  MAAT-1.1.0-x64.msi
-0e94dd116ba9f165100e381b68f2ebd98f2684ac41b45e1938c73b3f128a7755  MAAT-1.1.0-portable-x64.zip
-f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7  MAAT.exe
+13baa2698f6020c1df8d748c9846ceb05d3086c77a719c92a1c35f472d73e6aa  MAAT-1.2.0-x64.msi
+d2e202cbbf46aa08b73652cdba57a713432dbc4c3bbc831fae08bcc7778f477b  MAAT-1.2.0-portable-x64.zip
+78e2bd2922ac5c5cdeff071b8a15c06c9f6a38d17dc7494627d0c6075bfcb35c  MAAT.exe
 ```
 
 ---
@@ -68,6 +68,9 @@ f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7  MAAT.exe
   openable in any browser, with no external dependency).
 - **Streaming engine**: native enumeration, parallel batched ACL reading, bounded
   RAM even on very deep volumes (full audit of a system drive).
+- **Reliable traversal**: DFS namespaces followed to their targets, long paths
+  (> 260 characters), loop and depth guards, access-based enumeration (ABE) detection;
+  items that could not be fully audited are kept and flagged, never silently dropped.
 - **`.maat` project format**: compressed SQLite database (gzip), reopenable, holding
   results, parameters and metadata.
 
@@ -103,7 +106,7 @@ MSI installer (requires [WiX Toolset v5](https://wixtoolset.org/)):
 
 ```sh
 cd installer
-wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.1.0-x64.msi
+wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.2.0-x64.msi
 ```
 
 Portable package (no installation, settings stored next to the executable):
@@ -138,6 +141,22 @@ the UI reads the database with pagination for a virtualized tree, and the export
 consume the database in streaming, without ever materializing the whole set in memory.
 
 ## Changelog
+
+### 1.2.0
+- **More reliable audits**: DFS namespaces followed transparently to their targets;
+  automatic retry of transient network errors; loop protection and safety depth limit;
+  long paths (> 260 characters) now also on network shares; access-based enumeration
+  (ABE) detected on shares.
+- **Nothing silently dropped**: items whose permissions or content cannot be read stay
+  in the tree and are flagged (explorer, HTML report, CSV); inheritance sources above
+  the audited root are resolved.
+- **Performance**: faster native enumeration and permission parsing with much lower
+  memory use; instant expansion of very large folders; faster identity lookups.
+- **Interface**: item states in the explorer (amber dot, DFS / LINK tags, explanatory
+  panels), files counter, thousands separators, new tiles in the analysis report
+  (DFS links, loops avoided, ABE), updated user guide.
+- `.maat` projects from earlier versions open unchanged (automatic migration).
+- MSI: new product code, so the installer upgrades an existing installation in place.
 
 ### 1.1.0
 - Various bug fixes and optimizations.

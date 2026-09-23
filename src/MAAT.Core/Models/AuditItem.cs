@@ -52,6 +52,9 @@ public sealed class AuditItem
     /// <summary>Vrai si au moins une ACE de type Refuser porte sur cet élément.</summary>
     public bool HasDeny { get; set; }
 
+    /// <summary>États particuliers (ACL illisible, contenu non listable, lien DFS, boucle…).</summary>
+    public ItemFlags Flags { get; set; }
+
     /// <summary>Entrées ACL traduites associées à cet élément.</summary>
     public List<AceEntry> Acl { get; } = new();
 }

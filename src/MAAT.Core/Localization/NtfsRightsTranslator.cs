@@ -71,6 +71,17 @@ public static class NtfsRightsTranslator
         uint mask = unchecked((uint)numVal);
         var translated = new List<string>(4);
 
+        // Tous les bits du Contrôle total présents : c'est un contrôle total, quels que
+        // soient les bits génériques / spéciaux en plus (redondants). Cas typique : la
+        // DACL nulle, que .NET matérialise en « Tout le monde » avec le masque 0xFFFFFFFF.
+        const uint FullControlBits = 0x001F01FF;
+        if ((mask & FullControlBits) == FullControlBits)
+        {
+            string full = fr ? "Contrôle total" : "Full control";
+            Cache[cacheKey] = full;
+            return full;
+        }
+
         if ((mask & 0xF0000000) != 0)
         {
             if ((mask & GenericAll) != 0) { translated.Add(fr ? "Contrôle total (générique)" : "Full control (generic)"); }

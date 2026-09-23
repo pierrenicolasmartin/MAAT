@@ -39,11 +39,21 @@ public static class ProjectService
         string tempSqlite = Path.Combine(Path.GetTempPath(), $"maat_save_{Guid.NewGuid():N}.maatdb");
         try
         {
-            using (var cmd = db.Connection.CreateCommand())
+            // Les index de consultation (reconstructibles à la demande) sont exclus du projet :
+            // ils l'alourdiraient d'environ un tiers. Retirés le temps de la copie, puis recréés
+            // dans la base de travail si la vue Identités les utilisait déjà.
+            bool hadIndexes = db.HasQueryIndexes();
+            if (hadIndexes) { db.DropQueryIndexes(); }
+            try
             {
+                using var cmd = db.Connection.CreateCommand();
                 cmd.CommandText = "VACUUM main INTO $target;";
                 cmd.Parameters.AddWithValue("$target", tempSqlite);
                 cmd.ExecuteNonQuery();
+            }
+            finally
+            {
+                if (hadIndexes) { db.EnsureQueryIndexes(); }
             }
 
             ct.ThrowIfCancellationRequested();

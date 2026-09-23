@@ -8,7 +8,7 @@ arborescence, lit les **droits NTFS (ACL)** de chaque élément, calcule les **t
 et résout les **groupes Active Directory** (appartenances imbriquées), puis restitue
 le tout dans une interface interactive et des rapports exportables.
 
-> Statut : version 1.1.0 — fonctionnellement complète.
+> Statut : version 1.2.0 — fonctionnellement complète.
 > Licence : **GNU GPL v3**.
 
 ---
@@ -40,16 +40,16 @@ proposés — un installeur MSI et un package portable sans installation :
 
 | Artefact | Description | VirusTotal |
 |---|---|:--:|
-| **`MAAT-1.1.0-x64.msi`** | Installeur (Windows x64, runtime .NET 8 inclus) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/01a2196ce660e7a2db20905d73f913bc426b474e2e6ebe457b8aa1572e330c73) |
-| **`MAAT-1.1.0-portable-x64.zip`** | Package portable (sans installation) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/0e94dd116ba9f165100e381b68f2ebd98f2684ac41b45e1938c73b3f128a7755) |
-| &nbsp;&nbsp;└ **`MAAT.exe`** | Exécutable portable (dans le ZIP) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7) |
+| **`MAAT-1.2.0-x64.msi`** | Installeur (Windows x64, runtime .NET 8 inclus) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/13baa2698f6020c1df8d748c9846ceb05d3086c77a719c92a1c35f472d73e6aa) |
+| **`MAAT-1.2.0-portable-x64.zip`** | Package portable (sans installation) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/d2e202cbbf46aa08b73652cdba57a713432dbc4c3bbc831fae08bcc7778f477b) |
+| &nbsp;&nbsp;└ **`MAAT.exe`** | Exécutable portable (dans le ZIP) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/78e2bd2922ac5c5cdeff071b8a15c06c9f6a38d17dc7494627d0c6075bfcb35c) |
 
 Intégrité — SHA-256 :
 
 ```
-01a2196ce660e7a2db20905d73f913bc426b474e2e6ebe457b8aa1572e330c73  MAAT-1.1.0-x64.msi
-0e94dd116ba9f165100e381b68f2ebd98f2684ac41b45e1938c73b3f128a7755  MAAT-1.1.0-portable-x64.zip
-f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7  MAAT.exe
+13baa2698f6020c1df8d748c9846ceb05d3086c77a719c92a1c35f472d73e6aa  MAAT-1.2.0-x64.msi
+d2e202cbbf46aa08b73652cdba57a713432dbc4c3bbc831fae08bcc7778f477b  MAAT-1.2.0-portable-x64.zip
+78e2bd2922ac5c5cdeff071b8a15c06c9f6a38d17dc7494627d0c6075bfcb35c  MAAT.exe
 ```
 
 ---
@@ -68,6 +68,10 @@ f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7  MAAT.exe
   dans n'importe quel navigateur, sans dépendance externe).
 - **Moteur en streaming** : énumération native, lecture ACL parallèle par lots,
   RAM bornée même sur des volumes très profonds (audit complet d'un disque système).
+- **Parcours fiable** : espaces de noms DFS suivis jusqu'à leur cible, chemins longs
+  (> 260 caractères), protections contre les boucles et la profondeur excessive,
+  détection de l'énumération basée sur l'accès (ABE) ; les éléments incomplètement
+  audités sont conservés et signalés, jamais écartés en silence.
 - **Format projet `.maat`** : base SQLite compressée (gzip), rouvrable, contenant
   résultats, paramètres et métadonnées.
 
@@ -105,7 +109,7 @@ Installeur MSI (nécessite [WiX Toolset v5](https://wixtoolset.org/)) :
 
 ```sh
 cd installer
-wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.1.0-x64.msi
+wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.2.0-x64.msi
 ```
 
 Package portable (sans installation, préférences stockées à côté de l'exécutable) :
@@ -140,6 +144,26 @@ SQLite ; l'interface lit la base en pagination pour un arbre virtualisé, et les
 consomment la base en streaming, sans jamais matérialiser l'ensemble en mémoire.
 
 ## Journal des versions
+
+### 1.2.0
+- **Audits plus fiables** : espaces de noms DFS suivis de façon transparente jusqu'à
+  leur cible ; nouvelle tentative automatique sur les erreurs réseau passagères ;
+  protection contre les boucles et profondeur de sécurité ; chemins longs
+  (> 260 caractères) désormais aussi sur les partages réseau ; détection de
+  l'énumération basée sur l'accès (ABE) des partages.
+- **Plus rien d'écarté en silence** : les éléments dont les droits ou le contenu sont
+  illisibles restent dans l'arbre et sont signalés (explorateur, rapport HTML, CSV) ;
+  les sources d'héritage situées au-dessus de la racine auditée sont résolues.
+- **Performances** : énumération native et lecture des droits plus rapides, empreinte
+  mémoire nettement réduite ; dépliage instantané des très grands dossiers ; recherche
+  par identité accélérée.
+- **Interface** : états des éléments dans l'explorateur (pastille ambre, étiquettes
+  DFS / LIEN, encarts explicatifs), compteur de fichiers, séparateurs de milliers,
+  nouvelles tuiles dans le rapport d'analyse (liens DFS, boucles évitées, ABE), guide
+  d'utilisation mis à jour.
+- Les projets `.maat` des versions précédentes s'ouvrent tels quels (migration
+  automatique).
+- MSI : nouveau code produit, l'installeur met à niveau une installation existante.
 
 ### 1.1.0
 - Correction de divers bugs et optimisations.

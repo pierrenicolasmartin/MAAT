@@ -116,7 +116,7 @@
                     <TextBlock Text="{l:Loc Rep_Title}" FontFamily="{StaticResource Font.Serif}" FontSize="33"
                                Foreground="{DynamicResource TextBrush}" Margin="0,6,0,0" TextOptions.TextFormattingMode="Ideal" />
                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                        <TextBlock Text="{Binding RootPath}" FontFamily="{StaticResource Font.Mono}" FontSize="12"
+                        <TextBlock Text="{Binding RootPath}" ToolTip="{Binding RootPath}" FontFamily="{StaticResource Font.Mono}" FontSize="12"
                                    Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis" MaxWidth="320" />
                         <Border Style="{StaticResource MetaSep}" />
@@ -170,16 +170,16 @@
             <StackPanel>
 
                 <!-- Rangée de signaux (seulement les anomalies présentes + AD) -->
-                <ItemsControl ItemsSource="{Binding Signals}" Margin="0"
+                <ItemsControl ItemsSource="{Binding Signals}" Margin="-5"
                               Visibility="{Binding HasSignals, Converter={StaticResource BoolToVis}}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <UniformGrid Rows="1" />
+                            <UniformGrid Columns="{Binding SignalColumns}" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Margin="5,0" CornerRadius="8" BorderThickness="1" Padding="15,13" Style="{StaticResource TileBorder}">
+                            <Border Margin="5" CornerRadius="8" BorderThickness="1" Padding="15,13" Style="{StaticResource TileBorder}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -279,7 +279,7 @@
                                             <TextBlock Grid.Column="0" Text="{Binding Reason}" FontSize="12.5"
                                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                                        Style="{StaticResource BadgeText}" />
-                                            <TextBlock Grid.Column="1" Text="{Binding Path}" VerticalAlignment="Center" Margin="14,0"
+                                            <TextBlock Grid.Column="1" Text="{Binding DisplayPath}" ToolTip="{Binding Path}" VerticalAlignment="Center" Margin="14,0"
                                                        FontFamily="{StaticResource Font.Mono}" FontSize="12"
                                                        Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2" Text="{Binding SeverityText}" VerticalAlignment="Center"

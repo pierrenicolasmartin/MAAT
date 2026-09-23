@@ -42,6 +42,7 @@ public static class CoreStrings
         ["Prog_SizeRead"] = "Lecture fichiers : {0} / {1} dossiers",
         ["Prog_SizeAggr"] = "Agrégation : {0} / {1} dossiers",
         ["Prog_ItemsProcessed"] = "{0} / {1} éléments",
+        ["Src_Unknown"] = "Source inconnue",
     };
 
     private static readonly IReadOnlyDictionary<string, string> En = new Dictionary<string, string>
@@ -54,5 +55,6 @@ public static class CoreStrings
         ["Prog_SizeRead"] = "Reading files: {0} / {1} folders",
         ["Prog_SizeAggr"] = "Aggregating: {0} / {1} folders",
         ["Prog_ItemsProcessed"] = "{0} / {1} items",
+        ["Src_Unknown"] = "Unknown source",
     };
 }

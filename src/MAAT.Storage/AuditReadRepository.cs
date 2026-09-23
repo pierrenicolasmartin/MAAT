@@ -20,8 +20,27 @@ namespace MAAT.Storage;
 public sealed class AuditReadRepository
 {
     private readonly SqliteConnection _conn;
+    private readonly AuditDatabase _db;
+    private bool _queryIndexesReady;
 
-    public AuditReadRepository(AuditDatabase db) => _conn = db.Connection;
+    public AuditReadRepository(AuditDatabase db)
+    {
+        _db = db;
+        _conn = db.Connection;
+    }
+
+    /// <summary>
+    /// Garantit l'index par identité avant les requêtes d'UNE identité (vue Identités) :
+    /// création à la demande, une seule fois — sans lui, chaque sélection parcourrait toute
+    /// la table des ACE (mesuré : ~0,3 à 0,6 s par clic sur C:Windows, contre ~0 ms).
+    /// Les requêtes globales (liste, total) n'en tirent aucun profit et ne le créent pas.
+    /// </summary>
+    private void EnsureQueryIndexes()
+    {
+        if (_queryIndexesReady) { return; }
+        _db.EnsureQueryIndexes();
+        _queryIndexesReady = true;
+    }
 
     /// <summary>Dernier audit enregistré dans la base (ou null si aucun).</summary>
     public AuditRunRow? GetLatestRun()
@@ -37,7 +56,8 @@ public sealed class AuditReadRepository
     {
         using var cmd = _conn.CreateCommand();
         cmd.CommandText =
-            "SELECT * FROM fs_item WHERE run_id = $run AND parent_id IS NULL ORDER BY id LIMIT 1;";
+            "SELECT f.*, EXISTS(SELECT 1 FROM fs_item c WHERE c.parent_id = f.id) AS has_children " +
+            "FROM fs_item f WHERE f.run_id = $run AND f.parent_id IS NULL ORDER BY f.id LIMIT 1;";
         cmd.Parameters.AddWithValue("$run", runId);
         using var r = cmd.ExecuteReader();
         return r.Read() ? MapItem(r) : null;
@@ -51,9 +71,10 @@ public sealed class AuditReadRepository
     {
         using var cmd = _conn.CreateCommand();
         cmd.CommandText = """
-            SELECT * FROM fs_item
-            WHERE parent_id = $parent
-            ORDER BY is_file, name COLLATE NOCASE
+            SELECT f.*, EXISTS(SELECT 1 FROM fs_item c WHERE c.parent_id = f.id) AS has_children
+            FROM fs_item f
+            WHERE f.parent_id = $parent
+            ORDER BY f.is_file, f.name COLLATE NOCASE
             LIMIT $limit OFFSET $offset;
             """;
         cmd.Parameters.AddWithValue("$parent", parentId);
@@ -142,7 +163,7 @@ public sealed class AuditReadRepository
             SELECT i.id, i.full_path, i.name, i.depth, i.is_file, i.is_reparse,
                    i.size_bytes, i.size_partial, i.has_deny,
                    a.identity, a.ace_type, a.rights_fr, a.scope_fr,
-                   a.is_inherited, a.source_path, a.resolved_members
+                   a.is_inherited, a.source_path, a.resolved_members, i.flags
             FROM fs_item i
             LEFT JOIN ace a ON a.item_id = i.id
             WHERE i.run_id = $run
@@ -170,6 +191,7 @@ public sealed class AuditReadRepository
                     SizeBytes = r.IsDBNull(6) ? null : r.GetInt64(6),
                     SizePartial = r.GetInt32(7) != 0,
                     HasDeny = r.GetInt32(8) != 0,
+                    Flags = (ItemFlags)r.GetInt32(16),
                 };
             }
             if (!r.IsDBNull(9)) // l'élément a au moins une ACE sur cette ligne
@@ -269,6 +291,7 @@ public sealed class AuditReadRepository
     /// <summary>Nombre d'emplacements (ACE directes) d'une identité — total de pagination.</summary>
     public int CountIdentityLocations(long runId, string identity)
     {
+        EnsureQueryIndexes();
         using var cmd = _conn.CreateCommand();
         cmd.CommandText = """
             SELECT COUNT(*) FROM ace a JOIN fs_item f ON a.item_id = f.id
@@ -286,6 +309,7 @@ public sealed class AuditReadRepository
     /// </summary>
     public IReadOnlyList<IdentityLocationRow> GetIdentityLocations(long runId, string identity, int offset, int limit)
     {
+        EnsureQueryIndexes();
         using var cmd = _conn.CreateCommand();
         cmd.CommandText = """
             SELECT f.full_path, f.name, f.is_file, a.ace_type, a.rights_fr, a.scope_fr, a.is_inherited
@@ -342,6 +366,18 @@ public sealed class AuditReadRepository
             r.GetInt32(O("is_reparse")) != 0,
             r.IsDBNull(O("size_bytes")) ? null : r.GetInt64(O("size_bytes")),
             r.GetInt32(O("size_partial")) != 0,
-            r.GetInt32(O("has_deny")) != 0);
+            r.GetInt32(O("has_deny")) != 0,
+            (ItemFlags)r.GetInt32(O("flags")),
+            HasChildrenColumn(r) is int hc ? r.GetInt32(hc) != 0 : null);
+    }
+
+    /// <summary>Index de la colonne calculée « has_children » si la requête la fournit (arbre).</summary>
+    private static int? HasChildrenColumn(SqliteDataReader r)
+    {
+        for (int i = r.FieldCount - 1; i >= 0; i--)
+        {
+            if (r.GetName(i) == "has_children") { return i; }
+        }
+        return null;
     }
 }

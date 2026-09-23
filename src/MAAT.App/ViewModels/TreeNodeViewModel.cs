@@ -49,7 +49,9 @@ public sealed class TreeNodeViewModel : ObservableObject, IDisposable
         _leaf = leaf;
         HighlightTerm = highlight;
         Children = new ObservableCollection<object>();
-        HasChildren = !leaf && !row.IsFile && ctx.Repo.CountChildren(row.Id) > 0;
+        // « A des enfants ? » est fourni par la requête de l'arbre (EXISTS) : plus de
+        // requête COUNT par nœud créé (N+1 coûteux sur les dossiers à large éventail).
+        HasChildren = !leaf && !row.IsFile && (row.HasChildren ?? ctx.Repo.CountChildren(row.Id) > 0);
         if (HasChildren)
         {
             Children.Add(LoadingPlaceholder.Instance); // déclenche l'affichage de l'expandeur
@@ -68,6 +70,24 @@ public sealed class TreeNodeViewModel : ObservableObject, IDisposable
 
     public bool HasChildren { get; }
     public ObservableCollection<object> Children { get; }
+
+    /// <summary>Fichier (pictogramme document) ou dossier (pictogramme dossier).</summary>
+    public bool IsFile => _row.IsFile;
+
+    /// <summary>États particuliers (ACL illisible, contenu non listable, lien DFS, boucle…).</summary>
+    public MAAT.Core.Models.ItemFlags Flags => _row.Flags;
+
+    /// <summary>Audit incomplet pour cet élément : pastille d'avertissement dans l'arbre.</summary>
+    public bool HasWarning => (Flags & ItemStateViewModel.WarningFlags) != 0;
+
+    /// <summary>Lien d'espace de noms DFS (étiquette discrète dans l'arbre).</summary>
+    public bool IsDfsLink => (Flags & MAAT.Core.Models.ItemFlags.DfsLink) != 0;
+
+    /// <summary>Jonction ou lien symbolique (hors DFS) : audité, cible non parcourue.</summary>
+    public bool IsReparseLink => _row.IsReparse && !IsDfsLink;
+
+    /// <summary>Info-bulle résumant les états de l'élément (null si aucun).</summary>
+    public string? StateTooltip => ItemStateViewModel.Tooltip(Flags, IsReparseLink);
 
     /// <summary>Taille formatée (vide si non calculée), préfixe ≈ si partielle.</summary>
     public string SizeText => SizeFormatter.Format(_row.SizeBytes, _row.SizePartial, LocalizationManager.Instance.ActiveCode);

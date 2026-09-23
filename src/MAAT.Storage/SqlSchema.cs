@@ -16,7 +16,17 @@ namespace MAAT.Storage;
 /// </summary>
 internal static class SqlSchema
 {
-    public const int Version = 1;
+    public const int Version = 2;
+
+    /// <summary>
+    /// Index de consultation de la vue Identités (ACE par identité). Créé À LA DEMANDE, à la
+    /// première requête par identité (construction en bloc, bien plus rapide qu'une mise à
+    /// jour à chaque insertion), et EXCLU des fichiers .maat (il se reconstruit en un instant,
+    /// et alourdirait le projet d'environ un tiers). Idempotent.
+    /// </summary>
+    public const string QueryIndexes = """
+        CREATE INDEX IF NOT EXISTS ix_ace_identity ON ace(identity, item_id);
+        """;
 
     public const string CreateScript = """
         PRAGMA synchronous = NORMAL;
@@ -24,7 +34,7 @@ internal static class SqlSchema
         CREATE TABLE schema_info (
             version INTEGER NOT NULL
         );
-        INSERT INTO schema_info(version) VALUES (1);
+        INSERT INTO schema_info(version) VALUES (2);
 
         CREATE TABLE audit_run (
             id            INTEGER PRIMARY KEY,
@@ -61,7 +71,8 @@ internal static class SqlSchema
             is_reparse   INTEGER NOT NULL,
             size_bytes   INTEGER,
             size_partial INTEGER NOT NULL,
-            has_deny     INTEGER NOT NULL
+            has_deny     INTEGER NOT NULL,
+            flags        INTEGER NOT NULL DEFAULT 0
         );
         CREATE INDEX ix_fs_item_parent ON fs_item(parent_id);
         CREATE INDEX ix_fs_item_run    ON fs_item(run_id);

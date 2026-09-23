@@ -10,23 +10,72 @@
 namespace MAAT.Core.Common;
 
 /// <summary>
-/// Préfixage « chemin long » (<c>\\?\</c>) pour les API Win32 limitées à MAX_PATH
-/// (260). Indispensable et cohérent entre l'<b>énumération</b> et la <b>lecture
-/// ACL</b> : sans cela, des fichiers profondément imbriqués (sessions, dépôts Git,
-/// node_modules…) seraient énumérés mais leur ACL illisible — donc l'élément
-/// silencieusement omis (régression de fiabilité).
+/// Préfixage « chemin long » pour les API Win32 limitées à MAX_PATH (260).
+/// Indispensable et cohérent entre l'<b>énumération</b> et la <b>lecture ACL</b> :
+/// sans cela, des éléments profondément imbriqués seraient énumérés mais leur ACL
+/// illisible — ou pas énumérés du tout. Le préfixe désactive aussi la normalisation
+/// Win32, ce qui rend accessibles les noms à point ou espace final.
 /// </summary>
 internal static class LongPath
 {
     /// <summary>
-    /// Forme « extended-length » d'un chemin local de lecteur (<c>X:\…</c> →
-    /// <c>\\?\X:\…</c>). Les chemins UNC (<c>\\serveur\partage</c>) et déjà préfixés
-    /// sont renvoyés tels quels (comportement inchangé sur le réseau).
+    /// Forme « extended-length » d'un chemin absolu :
+    /// <c>X:\…</c> → <c>\\?\X:\…</c> ; <c>\\serveur\partage\…</c> → <c>\\?\UNC\serveur\partage\…</c>
+    /// (partages réseau et espaces de noms DFS : même chemin NT, donc même résolution).
+    /// Les chemins déjà préfixés sont renvoyés tels quels.
     /// </summary>
     public static string ToExtended(string path)
-        => NeedsPrefix(path) ? @"\\?\" + path : path;
+    {
+        if (path.StartsWith(@"\\?\", StringComparison.Ordinal) || path.StartsWith(@"\\.\", StringComparison.Ordinal))
+        {
+            return path;
+        }
+        // Le préfixe \\?\ désactive la normalisation Win32 : « / » n'y serait plus un séparateur.
+        if (path.Contains('/'))
+        {
+            path = path.Replace('/', '\\');
+        }
+        if (path.StartsWith(@"\\", StringComparison.Ordinal))
+        {
+            return @"\\?\UNC\" + path[2..];
+        }
+        if (path.Length >= 2 && path[1] == ':')
+        {
+            return @"\\?\" + path;
+        }
+        return path;
+    }
+}
 
-    private static bool NeedsPrefix(string path)
-        => path.Length >= 2 && path[1] == ':'
-           && !path.StartsWith(@"\\", StringComparison.Ordinal);
+/// <summary>Normalisation du chemin racine d'un audit.</summary>
+public static class PathNormalizer
+{
+    /// <summary>
+    /// Forme canonique d'une racine d'audit : absolue, séparateurs « \ », « . » et
+    /// « .. » résolus, espaces de bord retirés, sans antislash final (sauf racine de
+    /// lecteur « C:\ »). Indispensable avant le préfixe <c>\\?\</c>, qui désactive toute
+    /// normalisation Win32 : un « C:/Users » non normalisé donnerait un audit vide.
+    /// </summary>
+    public static string NormalizeRoot(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) { return path; }
+        string p = path.Trim();
+        if (p.StartsWith(@"\\?\", StringComparison.Ordinal) || p.StartsWith(@"\\.\", StringComparison.Ordinal))
+        {
+            return p; // déjà sous forme étendue : pris tel quel
+        }
+        if (p.Length == 2 && p[1] == ':')
+        {
+            return p + '\\'; // « C: » seul désignerait le répertoire courant du lecteur
+        }
+        try
+        {
+            p = Path.GetFullPath(p);
+        }
+        catch
+        {
+            return path.Trim();
+        }
+        return p.Length > 3 ? p.TrimEnd('\\') : p;
+    }
 }
