@@ -93,7 +93,7 @@ public sealed class AuditReportViewModel : ObservableObject
         SignalColumns = Signals.Count <= 4 ? Math.Max(1, Signals.Count) : (Signals.Count + 1) / 2;
 
         // ── Table des éléments non audités (erreurs d'abord) ──
-        AllIssues = issues.OrderByDescending(e => e.Severity).Select(e => new IssueRow(e)).ToList();
+        AllIssues = issues.OrderByDescending(e => e.Severity).Select(e => new IssueRow(e, summary.RootPath)).ToList();
         Issues = new ObservableCollection<IssueRow>(AllIssues.Take(PreviewCount));
 
         ShowAllCommand = new RelayCommand(ShowAll, () => HasMore);
@@ -209,11 +209,12 @@ public sealed class SignalTile
 /// <summary>Une ligne « élément non audité » : motif localisé, chemin, gravité, teinte du badge.</summary>
 public sealed class IssueRow
 {
-    public IssueRow(ScanLogEntry e)
+    public IssueRow(ScanLogEntry e, string? root = null)
     {
         IsError = e.Severity == LogSeverity.Error;
         Reason = CategoryLabel(e.Type);
         Path = string.IsNullOrEmpty(e.Path) ? "—" : e.Path;
+        DisplayPath = RelativeToRoot(Path, root);
         SeverityText = LocalizationManager.T(IsError ? "Sev_Error" : "Sev_Warn");
 
         string key = CategoryKey(e.Type);
@@ -224,8 +225,26 @@ public sealed class IssueRow
     public bool IsError { get; }
     public bool BadgeRed { get; }
     public string Reason { get; }
+    /// <summary>Chemin complet (info-bulle, export du journal).</summary>
     public string Path { get; }
+
+    /// <summary>
+    /// Chemin affiché : relatif à la racine auditée (« …\sous\dossier ») pour que les lignes
+    /// restent distinctes quand la racine est longue ; la racine elle-même reste entière.
+    /// </summary>
+    public string DisplayPath { get; }
+
     public string SeverityText { get; }
+
+    private static string RelativeToRoot(string path, string? root)
+    {
+        if (string.IsNullOrEmpty(root)) { return path; }
+        string r = root.TrimEnd('\\');
+        return path.Length > r.Length + 1 && path[r.Length] == '\\'
+               && path.StartsWith(r, StringComparison.OrdinalIgnoreCase)
+            ? "…" + path[r.Length..]
+            : path;
+    }
 
     /// <summary>Clé de catalogue (non localisée) du motif, pour regrouper et traduire.</summary>
     public static string CategoryKey(string code) => code switch
