@@ -8,7 +8,7 @@ the **NTFS permissions (ACLs)** of every item, computes **sizes** and resolves
 **Active Directory groups** (nested memberships), then presents everything in an
 interactive interface and exportable reports.
 
-> Status: version 1.1.0 — feature-complete.
+> Status: version 1.2.0 — feature-complete.
 > License: **GNU GPL v3**.
 
 ---
@@ -68,6 +68,9 @@ f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7  MAAT.exe
   openable in any browser, with no external dependency).
 - **Streaming engine**: native enumeration, parallel batched ACL reading, bounded
   RAM even on very deep volumes (full audit of a system drive).
+- **Reliable traversal**: DFS namespaces followed to their targets, long paths
+  (> 260 characters), loop and depth guards, access-based enumeration (ABE) detection;
+  items that could not be fully audited are kept and flagged, never silently dropped.
 - **`.maat` project format**: compressed SQLite database (gzip), reopenable, holding
   results, parameters and metadata.
 
@@ -103,7 +106,7 @@ MSI installer (requires [WiX Toolset v5](https://wixtoolset.org/)):
 
 ```sh
 cd installer
-wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.1.0-x64.msi
+wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.2.0-x64.msi
 ```
 
 Portable package (no installation, settings stored next to the executable):
@@ -138,6 +141,22 @@ the UI reads the database with pagination for a virtualized tree, and the export
 consume the database in streaming, without ever materializing the whole set in memory.
 
 ## Changelog
+
+### 1.2.0
+- **More reliable audits**: DFS namespaces followed transparently to their targets;
+  automatic retry of transient network errors; loop protection and safety depth limit;
+  long paths (> 260 characters) now also on network shares; access-based enumeration
+  (ABE) detected on shares.
+- **Nothing silently dropped**: items whose permissions or content cannot be read stay
+  in the tree and are flagged (explorer, HTML report, CSV); inheritance sources above
+  the audited root are resolved.
+- **Performance**: faster native enumeration and permission parsing with much lower
+  memory use; instant expansion of very large folders; faster identity lookups.
+- **Interface**: item states in the explorer (amber dot, DFS / LINK tags, explanatory
+  panels), files counter, thousands separators, new tiles in the analysis report
+  (DFS links, loops avoided, ABE), updated user guide.
+- `.maat` projects from earlier versions open unchanged (automatic migration).
+- MSI: new product code, so the installer upgrades an existing installation in place.
 
 ### 1.1.0
 - Various bug fixes and optimizations.

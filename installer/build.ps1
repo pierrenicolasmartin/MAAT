@@ -9,7 +9,7 @@ Set-Location $PSScriptRoot
 $enMsi  = "build\en\MAAT.msi"
 $frMsi  = "build\fr\MAAT.msi"
 $mst    = "build\fr-FR.mst"
-$out    = "MAAT-1.1.0-x64.msi"
+$out    = "MAAT-1.2.0-x64.msi"
 
 New-Item -ItemType Directory -Force build\en, build\fr | Out-Null
 

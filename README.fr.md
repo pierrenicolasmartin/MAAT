@@ -8,7 +8,7 @@ arborescence, lit les **droits NTFS (ACL)** de chaque élément, calcule les **t
 et résout les **groupes Active Directory** (appartenances imbriquées), puis restitue
 le tout dans une interface interactive et des rapports exportables.
 
-> Statut : version 1.1.0 — fonctionnellement complète.
+> Statut : version 1.2.0 — fonctionnellement complète.
 > Licence : **GNU GPL v3**.
 
 ---
@@ -68,6 +68,10 @@ f6a0297a770c7206b270bc0bfcce22edf36a5c93d4563e26920c77b8030e34a7  MAAT.exe
   dans n'importe quel navigateur, sans dépendance externe).
 - **Moteur en streaming** : énumération native, lecture ACL parallèle par lots,
   RAM bornée même sur des volumes très profonds (audit complet d'un disque système).
+- **Parcours fiable** : espaces de noms DFS suivis jusqu'à leur cible, chemins longs
+  (> 260 caractères), protections contre les boucles et la profondeur excessive,
+  détection de l'énumération basée sur l'accès (ABE) ; les éléments incomplètement
+  audités sont conservés et signalés, jamais écartés en silence.
 - **Format projet `.maat`** : base SQLite compressée (gzip), rouvrable, contenant
   résultats, paramètres et métadonnées.
 
@@ -105,7 +109,7 @@ Installeur MSI (nécessite [WiX Toolset v5](https://wixtoolset.org/)) :
 
 ```sh
 cd installer
-wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.1.0-x64.msi
+wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.2.0-x64.msi
 ```
 
 Package portable (sans installation, préférences stockées à côté de l'exécutable) :
@@ -140,6 +144,26 @@ SQLite ; l'interface lit la base en pagination pour un arbre virtualisé, et les
 consomment la base en streaming, sans jamais matérialiser l'ensemble en mémoire.
 
 ## Journal des versions
+
+### 1.2.0
+- **Audits plus fiables** : espaces de noms DFS suivis de façon transparente jusqu'à
+  leur cible ; nouvelle tentative automatique sur les erreurs réseau passagères ;
+  protection contre les boucles et profondeur de sécurité ; chemins longs
+  (> 260 caractères) désormais aussi sur les partages réseau ; détection de
+  l'énumération basée sur l'accès (ABE) des partages.
+- **Plus rien d'écarté en silence** : les éléments dont les droits ou le contenu sont
+  illisibles restent dans l'arbre et sont signalés (explorateur, rapport HTML, CSV) ;
+  les sources d'héritage situées au-dessus de la racine auditée sont résolues.
+- **Performances** : énumération native et lecture des droits plus rapides, empreinte
+  mémoire nettement réduite ; dépliage instantané des très grands dossiers ; recherche
+  par identité accélérée.
+- **Interface** : états des éléments dans l'explorateur (pastille ambre, étiquettes
+  DFS / LIEN, encarts explicatifs), compteur de fichiers, séparateurs de milliers,
+  nouvelles tuiles dans le rapport d'analyse (liens DFS, boucles évitées, ABE), guide
+  d'utilisation mis à jour.
+- Les projets `.maat` des versions précédentes s'ouvrent tels quels (migration
+  automatique).
+- MSI : nouveau code produit, l'installeur met à niveau une installation existante.
 
 ### 1.1.0
 - Correction de divers bugs et optimisations.
