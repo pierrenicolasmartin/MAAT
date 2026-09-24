@@ -138,14 +138,18 @@ public sealed class AuditReadRepository
     /// </summary>
     public IReadOnlyList<FsItemRow> Search(long runId, string term, int limit = 500)
     {
+        // Le chemin n'est comparé qu'en dessous de la racine : le préfixe commun à tous les
+        // éléments (ex. « \\srv\partage\… ») ne doit pas faire correspondre tout l'audit.
+        int rootLen = GetRoot(runId)?.FullPath.TrimEnd('\\').Length ?? 0;
         using var cmd = _conn.CreateCommand();
         cmd.CommandText = """
             SELECT * FROM fs_item
-            WHERE run_id = $run AND (name LIKE $term OR full_path LIKE $term)
+            WHERE run_id = $run AND (name LIKE $term OR substr(full_path, $skip) LIKE $term)
             ORDER BY is_file, name COLLATE NOCASE
             LIMIT $limit;
             """;
         cmd.Parameters.AddWithValue("$run", runId);
+        cmd.Parameters.AddWithValue("$skip", rootLen + 1);
         cmd.Parameters.AddWithValue("$term", "%" + term + "%");
         cmd.Parameters.AddWithValue("$limit", limit);
 

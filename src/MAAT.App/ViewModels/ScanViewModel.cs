@@ -791,7 +791,7 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
             return;
         }
         _runId = run.Id;
-        _treeContext = new TreeContext { Repo = _repo };
+        _treeContext = new TreeContext { Repo = _repo, RootPath = _parameters.RootPath };
         var root = _repo.GetRoot(run.Id);
         if (root is not null)
         {
