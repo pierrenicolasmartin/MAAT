@@ -178,7 +178,7 @@ consomment la base en streaming, sans jamais matérialiser l'ensemble en mémoir
 Ce programme est un logiciel libre, distribué sous les termes de la
 **GNU General Public License v3** — voir [LICENSE](LICENSE).
 
-Les composants tiers (runtime .NET, SQLite, polices Hanken Grotesk / Newsreader / Geist Mono)
+Les composants tiers (runtime .NET, SQLite, polices Hanken Grotesk / Geist Mono)
 et leurs licences sont décrits dans [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 
 Copyright (C) 2026 Pierre-Nicolas MARTIN.

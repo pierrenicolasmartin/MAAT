@@ -21,14 +21,12 @@ MIT and Public Domain are permissive licenses, compatible with the GPLv3
 EMBEDDED FONTS — SIL Open Font License 1.1 (OFL)
 ────────────────────────────────────────────────────────────────────────
 • Hanken Grotesk — © Alfredo Marco Pradil / Hanken Design Co. (https://github.com/hanken-design/hanken-grotesk)
-• Newsreader — © The Newsreader Project Authors / Production Type (https://github.com/productiontype/Newsreader)
 • Geist Mono — © Vercel, Inc. (https://github.com/vercel/geist-font)
 
 The SIL OFL 1.1 is compatible with the GPL; fonts under the OFL may be
 bundled with and distributed alongside GPL software. The full OFL text for
 each family is provided with the font sources and at https://openfontlicense.org:
   • ressources/Fonts/Hanken_Grotesk/OFL.txt
-  • ressources/Fonts/Newsreader/OFL.txt
   • ressources/Fonts/Geist_Mono/OFL.txt
 
 ────────────────────────────────────────────────────────────────────────

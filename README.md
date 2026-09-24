@@ -171,7 +171,7 @@ consume the database in streaming, without ever materializing the whole set in m
 This program is free software, distributed under the terms of the
 **GNU General Public License v3** — see [LICENSE](LICENSE).
 
-Third-party components (.NET runtime, SQLite, the Hanken Grotesk / Newsreader / Geist Mono
+Third-party components (.NET runtime, SQLite, the Hanken Grotesk / Geist Mono
 fonts) and their licenses are described in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 
 Copyright (C) 2026 Pierre-Nicolas MARTIN.

@@ -103,10 +103,10 @@
                 </Border>
                 <StackPanel Grid.Column="1" Margin="14,0,16,0" VerticalAlignment="Center">
                     <TextBlock Text="{l:Loc Rep_Label}" Style="{StaticResource T.PageTitle}" FontSize="19" />
-                    <TextBlock Margin="0,4,0,0" TextTrimming="CharacterEllipsis" FontSize="12" Foreground="{DynamicResource TertiaryBrush}"
-                               ToolTip="{Binding RootPath}">
-                        <Run Text="{Binding RootPath, Mode=OneWay}" FontFamily="{StaticResource Font.Mono}" Foreground="{DynamicResource MutedBrush}" />
-                        <Run Text="   ·   " Foreground="{DynamicResource BorderStrongBrush}" /><Run Text="{Binding FinishedText, Mode=OneWay}" />
+                    <TextBlock Text="{Binding RootPath}" ToolTip="{Binding RootPath}" Style="{StaticResource T.MonoMuted}"
+                               Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Margin="0,3,0,0" Style="{StaticResource T.Caption}" TextTrimming="CharacterEllipsis">
+                        <Run Text="{Binding FinishedText, Mode=OneWay}" /><Run Text="   ·   " Foreground="{DynamicResource BorderStrongBrush}" /><Run Text="{Binding DurationText, Mode=OneWay}" />
                     </TextBlock>
                 </StackPanel>
                 <ContentControl Grid.Column="2" Style="{StaticResource VerdictBadge}" Content="{Binding VerdictText}" VerticalAlignment="Center" />
