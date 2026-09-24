@@ -258,6 +258,7 @@ public sealed class HtmlReportExporter
             .Replace("@@T_BRAND@@", He("H_Brand"))
             .Replace("@@T_SUBTITLE@@", He("H_Subtitle"))
             .Replace("@@T_THEME_TOGGLE@@", He("H_ThemeToggle"))
+            .Replace("@@COLON@@", _lang == "en" ? ": " : " : ") // « Profondeur : … » en français, « Depth: … » en anglais
             .Replace("@@T_DEPTH@@", He("H_Depth"))
             .Replace("@@T_MODE@@", He("H_Mode"))
             .Replace("@@T_CONTENT@@", He("H_Content"))

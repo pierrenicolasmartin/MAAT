@@ -120,7 +120,7 @@ public sealed class SqliteAuditSink : IAuditSink, IDisposable
         cmd.Parameters.AddWithValue("$taille", p.AuditSize ? 1 : 0);
         cmd.Parameters.AddWithValue("$started", DateTimeOffset.UtcNow.ToString("O"));
         cmd.Parameters.AddWithValue("$version",
-            Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.2.0");
+            Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.3.0");
         cmd.Parameters.AddWithValue("$machine", Environment.MachineName);
         cmd.Parameters.AddWithValue("$user", Environment.UserName);
         return (long)cmd.ExecuteScalar()!;

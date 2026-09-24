@@ -8,17 +8,17 @@ arborescence, lit les **droits NTFS (ACL)** de chaque élément, calcule les **t
 et résout les **groupes Active Directory** (appartenances imbriquées), puis restitue
 le tout dans une interface interactive et des rapports exportables.
 
-> Statut : version 1.2.0 — fonctionnellement complète.
+> Statut : version 1.3.0 — fonctionnellement complète.
 > Licence : **GNU GPL v3**.
 
 ---
 
 ## Aperçu
 
-| <img src="docs/screenshots/fr_main_window.png" width="430"><br>**Fenêtre principale** (thèmes clair et sombre) | <img src="docs/screenshots/fr_audit_config.png" width="430"><br>**Configuration** d'un nouvel audit |
+| <img src="docs/screenshots/fr_main_window.png" width="430"><br>**Écran d'accueil** (thèmes clair et sombre), projets récents | <img src="docs/screenshots/fr_audit_config.png" width="430"><br>**Configuration** d'un nouvel audit |
 |:--:|:--:|
-| <img src="docs/screenshots/fr_audit_in_progress.png" width="430"><br>**Progression** en temps réel, avec estimation du temps restant | <img src="docs/screenshots/fr_audit_results_folders.png" width="430"><br>**Résultats — vue Dossiers** : arbre + détail des droits |
-| <img src="docs/screenshots/fr_audit_results_identities.png" width="430"><br>**Résultats — vue Identités** : emplacements et membres | <img src="docs/screenshots/fr_audit_summary.png" width="430"><br>**Rapport d'analyse** de l'audit |
+| <img src="docs/screenshots/fr_audit_in_progress.png" width="430"><br>**Progression** en temps réel, avec estimation du temps restant | <img src="docs/screenshots/fr_audit_results_folders.png" width="430"><br>**Résultats — vue Dossiers** : chiffres clés, couverture, arbre + droits |
+| <img src="docs/screenshots/fr_audit_results_identities.png" width="430"><br>**Résultats — vue Identités** : emplacements et membres | <img src="docs/screenshots/fr_audit_summary.png" width="430"><br>**Rapport d'analyse** : périmètre couvert, points d'attention, éléments non audités |
 | <img src="docs/screenshots/fr_html_export.png" width="430"><br>**Rapport HTML interactif** (autonome) | <img src="docs/screenshots/fr_user_guide.png" width="430"><br>**Guide d'utilisation** intégré |
 
 ### Icônes
@@ -62,8 +62,9 @@ d2e202cbbf46aa08b73652cdba57a713432dbc4c3bbc831fae08bcc7778f477b  MAAT-1.2.0-por
 - **Résolution Active Directory** (optionnelle) : développement récursif des groupes
   avec détection de cycles ; annotation « (via *groupe*) » de l'appartenance indirecte.
   Dégradation propre hors domaine, sans dépendance au module RSAT.
-- **Interface moderne** (WPF, MVVM) : arbre virtualisé, recherche, filtres par type
-  de droit et par identité, thèmes clair / sombre, deux langues (FR / EN).
+- **Interface professionnelle** (WPF, MVVM) : système de design cohérent, arbre
+  virtualisé, recherche, filtres par type de droit et par identité, thèmes clair /
+  sombre accordés à Windows, raccourcis clavier, deux langues (FR / EN).
 - **Exports** : CSV et **rapport HTML interactif autonome** (un seul fichier, ouvrable
   dans n'importe quel navigateur, sans dépendance externe).
 - **Moteur en streaming** : énumération native, lecture ACL parallèle par lots,
@@ -109,7 +110,7 @@ Installeur MSI (nécessite [WiX Toolset v5](https://wixtoolset.org/)) :
 
 ```sh
 cd installer
-wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.2.0-x64.msi
+wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.3.0-x64.msi
 ```
 
 Package portable (sans installation, préférences stockées à côté de l'exécutable) :
@@ -144,6 +145,22 @@ SQLite ; l'interface lit la base en pagination pour un arbre virtualisé, et les
 consomment la base en streaming, sans jamais matérialiser l'ensemble en mémoire.
 
 ## Journal des versions
+
+### 1.3.0
+- **Interface repensée** : nouveau système de design — palette neutre avec un seul
+  accent, une seule police pour toute l'interface, icônes vectorielles, composants
+  cohérents, contrastes WCAG AA ; thèmes clair et sombre, barre de titre Windows
+  accordée au thème.
+- **Écran d'accueil** : ce que MAAT analyse, engagement de lecture seule, projets récents.
+- **Explorateur de résultats** : en-tête d'audit avec chiffres clés et indicateur de
+  **couverture** (audit complet / éléments non audités), boutons Enregistrer et Exporter,
+  table des droits plus lisible (pastilles Autoriser / Refuser, droits explicites mis en
+  évidence), chemins relatifs à la racine auditée, recherche plus précise.
+- **Rapport d'analyse** : périmètre couvert, points d'attention, éléments non audités —
+  rouvrable à tout moment, y compris pour un projet enregistré.
+- **Raccourcis clavier** : Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+F, F1.
+- **Rapport HTML** aligné sur la nouvelle charte (clair / sombre).
+- Police serif retirée : un paquet plus léger.
 
 ### 1.2.0
 - **Audits plus fiables** : espaces de noms DFS suivis de façon transparente jusqu'à

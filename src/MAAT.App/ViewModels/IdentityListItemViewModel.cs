@@ -51,7 +51,13 @@ public sealed class IdentityListItemViewModel
     /// </summary>
     public bool IsGroupLike => IsGroup
         || Identity.StartsWith(@"BUILTIN\", StringComparison.OrdinalIgnoreCase)
-        || Identity is "Tout le monde" or "Everyone";
+        || WellKnownGroups.Contains(Identity[(Identity.LastIndexOf('\\') + 1)..]);
+
+    /// <summary>Groupes bien connus (noms localisés FR / EN de Windows).</summary>
+    private static readonly HashSet<string> WellKnownGroups = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Tout le monde", "Everyone", "Utilisateurs authentifiés", "Authenticated Users",
+    };
 
     public string TypeText => IsGroupLike ? LocalizationManager.T("Scan_TypeGroup") : string.Empty;
     public bool HasTypeText => IsGroupLike;
