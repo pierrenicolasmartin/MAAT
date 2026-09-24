@@ -290,7 +290,7 @@ public sealed class HtmlReportExporter
             ("members", "J_Members"), ("type", "J_Type"), ("rights", "J_Rights"), ("scope", "J_Scope"),
             ("inheritance", "J_Inheritance"), ("source", "J_Source"), ("explicit", "J_Explicit"),
             ("inherited", "J_Inherited"), ("explicitTip", "J_ExplicitTip"), ("aclTip", "J_AclToggleTip"),
-            ("aceEntries", "J_AceEntries"), ("idGroups", "J_IdentitiesGroups"), ("clickExplore", "J_ClickExplore"),
+            ("aceEntries", "J_AceEntries"), ("hideFiles", "J_HideFiles"), ("showFiles", "J_ShowFiles"), ("idGroups", "J_IdentitiesGroups"), ("clickExplore", "J_ClickExplore"),
             ("totalId", "J_TotalIdentities"), ("noGroup", "J_NoGroup"), ("directUsers", "J_DirectUsers"),
             ("result", "J_Result"), ("results", "J_Results"), ("member", "J_Member"), ("members2", "J_Members2"),
             ("adGroups", "J_AdGroups"), ("csvMember", "J_CsvMember"), ("csvNbFolders", "J_CsvNbFolders"),

@@ -51,6 +51,39 @@ public sealed class AuditReadRepository
         return r.Read() ? MapRun(r) : null;
     }
 
+    /// <summary>
+    /// Journal de l'audit (table <c>scan_log</c>), dans l'ordre d'écriture : permet de
+    /// rouvrir le rapport d'analyse d'un projet enregistré.
+    /// </summary>
+    public IReadOnlyList<MAAT.Core.Diagnostics.ScanLogEntry> GetLog()
+    {
+        var list = new List<MAAT.Core.Diagnostics.ScanLogEntry>();
+        using var cmd = _conn.CreateCommand();
+        cmd.CommandText = "SELECT ts, severity, type, path, message FROM scan_log ORDER BY id;";
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            DateTimeOffset.TryParse(r.GetString(0), System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.RoundtripKind, out var ts);
+            var severity = r.GetString(1) == "ERROR"
+                ? MAAT.Core.Diagnostics.LogSeverity.Error
+                : MAAT.Core.Diagnostics.LogSeverity.Warn;
+            list.Add(new MAAT.Core.Diagnostics.ScanLogEntry(ts, severity, r.GetString(2), r.GetString(3),
+                r.IsDBNull(4) ? string.Empty : r.GetString(4)));
+        }
+        return list;
+    }
+
+    /// <summary>Nombre d'éléments portant l'état <paramref name="flag"/> (ex. liens DFS).</summary>
+    public int CountItemsWithFlag(long runId, ItemFlags flag)
+    {
+        using var cmd = _conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM fs_item WHERE run_id = $run AND (flags & $f) <> 0;";
+        cmd.Parameters.AddWithValue("$run", runId);
+        cmd.Parameters.AddWithValue("$f", (int)flag);
+        return Convert.ToInt32(cmd.ExecuteScalar());
+    }
+
     /// <summary>Élément racine de l'audit (parent_id NULL).</summary>
     public FsItemRow? GetRoot(long runId)
     {

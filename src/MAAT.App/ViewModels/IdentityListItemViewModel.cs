@@ -43,7 +43,18 @@ public sealed class IdentityListItemViewModel
 
     /// <summary>Marqueur : losange plein pour un groupe, rond plein pour un compte.</summary>
     public string Marker => IsGroup ? "◆" : "●";
-    public string TypeText => LocalizationManager.T(IsGroup ? "Scan_TypeGroup" : "Scan_TypeAccount");
+
+    /// <summary>
+    /// Groupe avéré : membres résolus (Active Directory), groupe local intégré
+    /// (<c>BUILTIN\…</c>, domaine qui ne contient que des groupes) ou « Tout le monde ».
+    /// Sans cette certitude, aucun type n'est affiché (plutôt qu'un type erroné).
+    /// </summary>
+    public bool IsGroupLike => IsGroup
+        || Identity.StartsWith(@"BUILTIN\", StringComparison.OrdinalIgnoreCase)
+        || Identity is "Tout le monde" or "Everyone";
+
+    public string TypeText => IsGroupLike ? LocalizationManager.T("Scan_TypeGroup") : string.Empty;
+    public bool HasTypeText => IsGroupLike;
     public string FolderCountText => LocalizationManager.T("Scan_FolderCount", FolderCount);
     public string PresentOnText => LocalizationManager.T("Scan_PresentOn", FolderCount);
     public string MembersCountText => LocalizationManager.T("Scan_MembersN", Members.Count);

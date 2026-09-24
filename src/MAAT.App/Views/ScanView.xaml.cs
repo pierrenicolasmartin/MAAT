@@ -33,7 +33,49 @@ public partial class ScanView : UserControl
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
-        => ApplyPaneWidth(UserSettings.Load().ExplorerPaneWidth);
+    {
+        ApplyPaneWidth(UserSettings.Load().ExplorerPaneWidth);
+        if (Window.GetWindow(this) is { } w)
+        {
+            w.PreviewKeyDown -= OnWindowKeyDown;
+            w.PreviewKeyDown += OnWindowKeyDown;
+        }
+    }
+
+    /// <summary>Ctrl+F : place le curseur dans la recherche.</summary>
+    private void OnWindowKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.F
+            && System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Control
+            && IsVisible)
+        {
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>Rapport d'analyse de l'audit (ce qui a été couvert / non audité).</summary>
+    private void OnReportClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ScanViewModel { IsCompleted: true } vm)
+        {
+            new AuditReportWindow(vm.BuildReport()) { Owner = Window.GetWindow(this) }.ShowDialog();
+        }
+    }
+
+    /// <summary>Menu d'export (rapport HTML / CSV) ancré sous le bouton.</summary>
+    private void OnExportClick(object sender, RoutedEventArgs e)
+    {
+        if (ExportButton.ContextMenu is { } menu)
+        {
+            menu.PlacementTarget = ExportButton;
+            menu.Placement = PlacementMode.Bottom;
+            menu.VerticalOffset = 4;
+            menu.DataContext = DataContext;
+            menu.IsOpen = true;
+        }
+    }
 
     private void OnTreeSelected(object sender, RoutedPropertyChangedEventArgs<object> e)
     {

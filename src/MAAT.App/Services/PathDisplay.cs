@@ -18,7 +18,7 @@ namespace MAAT.App.Services;
 /// pour l'affichage (et l'ouverture shell), sans toucher au chemin utilisé pour les
 /// opérations fichier.
 /// </summary>
-internal static class PathDisplay
+public static class PathDisplay
 {
     /// <summary>Retire le préfixe <c>\\?\</c> (et <c>\\?\UNC\</c> → <c>\\</c>) d'un chemin.</summary>
     public static string Strip(string? path)
@@ -27,5 +27,43 @@ internal static class PathDisplay
         if (path.StartsWith(@"\\?\UNC\", StringComparison.Ordinal)) { return @"\\" + path[8..]; }
         if (path.StartsWith(@"\\?\", StringComparison.Ordinal)) { return path[4..]; }
         return path;
+    }
+
+    /// <summary>
+    /// Chemin présenté relativement à la racine auditée, préfixé du nom de la racine
+    /// (« Partages\Finance\Paie ») : lisible même quand la racine est longue. Un chemin
+    /// hors racine est renvoyé tel quel.
+    /// </summary>
+    public static string Relative(string path, string root)
+    {
+        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(root)) { return path ?? string.Empty; }
+        string r = root.TrimEnd('\\');
+        if (string.Equals(path.TrimEnd('\\'), r, StringComparison.OrdinalIgnoreCase))
+        {
+            return RootName(r); // la racine elle-même
+        }
+        if (path.Length > r.Length && path[r.Length] == '\\'
+            && path.StartsWith(r, StringComparison.OrdinalIgnoreCase))
+        {
+            return RootName(r) + path[r.Length..];
+        }
+        return path;
+    }
+
+    /// <summary>
+    /// Nom affichable d'une racine : dernier segment (« Partages »), lecteur (« C: »)
+    /// ou partage UNC entier (« \\srv\partage »).
+    /// </summary>
+    public static string RootName(string root)
+    {
+        string r = Strip(root).TrimEnd('\\');
+        if (r.StartsWith(@"\\", StringComparison.Ordinal))
+        {
+            // \\srv\partage[\sous-dossier…] : sous la racine du partage, dernier segment.
+            int shareEnd = r.IndexOf('\\', r.IndexOf('\\', 2) + 1);
+            if (shareEnd < 0) { return r; }
+        }
+        int i = r.LastIndexOf('\\');
+        return i >= 0 && i < r.Length - 1 ? r[(i + 1)..] : r;
     }
 }
