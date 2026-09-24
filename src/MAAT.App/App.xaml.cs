@@ -21,6 +21,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        Services.TitleBarTheme.Register();
 
         if (e.Args.Length > 0 && File.Exists(e.Args[0])
             && string.Equals(Path.GetExtension(e.Args[0]), ".maat", StringComparison.OrdinalIgnoreCase))

@@ -19,9 +19,10 @@ namespace MAAT.App.ViewModels;
 /// </summary>
 public sealed class IdentityLocationViewModel
 {
-    public IdentityLocationViewModel(IdentityLocationRow row)
+    public IdentityLocationViewModel(IdentityLocationRow row, string rootPath)
     {
         FullPath = row.FullPath;
+        RelativePath = Services.PathDisplay.Relative(row.FullPath, rootPath);
         IsFile = row.IsFile;
         IsDeny = row.AceType == 1;
         RightsFr = row.RightsFr;
@@ -30,6 +31,9 @@ public sealed class IdentityLocationViewModel
     }
 
     public string FullPath { get; }
+
+    /// <summary>Chemin relatif à la racine auditée (affichage).</summary>
+    public string RelativePath { get; }
     public bool IsFile { get; }
     public bool IsDeny { get; }
     public string TypeText => LocalizationManager.T(IsDeny ? "Ace_Deny" : "Ace_Allow");

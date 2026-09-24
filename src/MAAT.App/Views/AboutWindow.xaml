@@ -6,117 +6,92 @@
         Width="520" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
         Icon="pack://application:,,,/MAAT.App;component/Assets/maat.ico"
-        Background="{DynamicResource BgBrush}"
+        Background="{DynamicResource SurfaceBrush}" Foreground="{DynamicResource TextBrush}"
+        FontFamily="{StaticResource Font.Sans}"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
-        <!-- Étiquette monospace majuscule (kicker) -->
-        <Style x:Key="Kicker" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource Font.Mono}" />
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="Foreground" Value="{DynamicResource TertiaryBrush}" />
+        <Style x:Key="FactLabel" TargetType="TextBlock" BasedOn="{StaticResource T.Label}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="FactValue" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
     </Window.Resources>
 
     <StackPanel>
-
-        <!-- ═════════ En-tête : logotype (image, theme-aware) ═════════ -->
-        <Border Background="{DynamicResource HeaderBrush}" BorderBrush="{DynamicResource BorderBrush}"
-                BorderThickness="0,0,0,1" Padding="40,30">
-            <StackPanel VerticalAlignment="Center">
-                <Image Source="{DynamicResource LogoTexteImage}" Height="56" Stretch="Uniform"
-                       HorizontalAlignment="Left" RenderOptions.BitmapScalingMode="HighQuality" />
-                <TextBlock Text="{l:Loc About_Subtitle}" FontFamily="{StaticResource Font.Sans}" FontSize="12.5"
-                           Foreground="{DynamicResource MutedBrush}" Margin="2,16,0,0" TextWrapping="Wrap" />
-            </StackPanel>
-        </Border>
-
-        <!-- ═════════ Corps ═════════ -->
-        <Border Padding="40,28">
-            <StackPanel>
-                <!-- Version + édition -->
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="VersionText" FontFamily="{StaticResource Font.Serif}" FontSize="24"
-                               Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"
-                               TextOptions.TextFormattingMode="Ideal" />
-                    <Border Width="22" Height="1" Background="{DynamicResource BorderStrongBrush}" Margin="14,0" VerticalAlignment="Center" />
-                    <TextBlock Style="{StaticResource Kicker}" Text="{l:Loc About_Edition}" VerticalAlignment="Center" />
+        <!-- ═════════ Identité du produit ═════════ -->
+        <Grid Margin="28,26,28,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Width="56" Height="56" CornerRadius="12" Background="{DynamicResource Surface3Brush}" VerticalAlignment="Top">
+                <Image Source="{DynamicResource LogoSymbolImage}" Width="34" Height="34" RenderOptions.BitmapScalingMode="HighQuality" />
+            </Border>
+            <StackPanel Grid.Column="1" Margin="16,2,0,0">
+                <TextBlock Text="MAÂT" Style="{StaticResource T.PageTitle}" FontSize="22" />
+                <TextBlock Text="{l:Loc About_Subtitle}" Style="{StaticResource T.Secondary}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <ContentControl x:Name="VersionBadge" Style="{StaticResource Badge.Accent}" />
+                    <ContentControl Style="{StaticResource Badge}" Content="{l:Loc About_Edition}" Margin="6,0,0,0" />
                 </StackPanel>
-
-                <!-- Description -->
-                <TextBlock Text="{l:Loc About_Tagline}" FontFamily="{StaticResource Font.Sans}" FontSize="14.5"
-                           Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,0" TextWrapping="Wrap" LineHeight="22" />
-
-                <!-- Rangée de capacités -->
-                <Border Margin="0,20,0,0" BorderBrush="{DynamicResource Card2Brush}" BorderThickness="0,1,0,1">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Margin="0,14,14,14">
-                            <TextBlock Style="{StaticResource Kicker}" FontSize="9.5" Text="{l:Loc About_Cap1Label}" />
-                            <TextBlock Text="{l:Loc About_Cap1Value}" FontFamily="{StaticResource Font.Sans}" FontSize="13.5"
-                                       Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,0" />
-                        </StackPanel>
-                        <Border Grid.Column="1" BorderBrush="{DynamicResource Card2Brush}" BorderThickness="1,0,0,0">
-                            <StackPanel Margin="16,14,14,14">
-                                <TextBlock Style="{StaticResource Kicker}" FontSize="9.5" Text="{l:Loc About_Cap2Label}" />
-                                <TextBlock Text="{l:Loc About_Cap2Value}" FontFamily="{StaticResource Font.Sans}" FontSize="13.5"
-                                           Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,0" />
-                            </StackPanel>
-                        </Border>
-                        <Border Grid.Column="2" BorderBrush="{DynamicResource Card2Brush}" BorderThickness="1,0,0,0">
-                            <StackPanel Margin="16,14,0,14">
-                                <TextBlock Style="{StaticResource Kicker}" FontSize="9.5" Text="{l:Loc About_Cap3Label}" />
-                                <TextBlock Text="{l:Loc About_Cap3Value}" FontFamily="{StaticResource Font.Sans}" FontSize="13.5"
-                                           Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,0" />
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </Border>
-
-                <!-- Bloc licence -->
-                <Grid Margin="0,22,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0" Width="3" Background="{DynamicResource AccentBrush}" />
-                    <StackPanel Grid.Column="1" Margin="16,0,0,0">
-                        <TextBlock Style="{StaticResource Kicker}" FontSize="10.5" Foreground="{DynamicResource MutedBrush}"
-                                   Text="{l:Loc About_License}" />
-                        <TextBlock Margin="0,6,0,0" FontFamily="{StaticResource Font.Sans}" FontSize="13.5"
-                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" LineHeight="21">
-                            <Run Text="{l:Loc About_LicenseBody}" /><Hyperlink
-                                NavigateUri="https://www.gnu.org/licenses/gpl-3.0.html" RequestNavigate="OnNavigate"
-                                FontFamily="{StaticResource Font.Mono}" Foreground="{DynamicResource AccentBrush}"
-                                >www.gnu.org/licenses/gpl-3.0.html</Hyperlink>
-                        </TextBlock>
-                        <TextBlock Margin="0,10,0,0" FontFamily="{StaticResource Font.Sans}" FontSize="12"
-                                   Foreground="{DynamicResource TertiaryBrush}" TextWrapping="Wrap" LineHeight="18"
-                                   Text="{l:Loc About_Warranty}" />
-                    </StackPanel>
-                </Grid>
             </StackPanel>
-        </Border>
+        </Grid>
+
+        <!-- ═════════ Description + faits ═════════ -->
+        <StackPanel Margin="28,20,28,24">
+            <TextBlock Text="{l:Loc About_Tagline}" TextWrapping="Wrap" LineHeight="20" Foreground="{DynamicResource MutedBrush}" />
+
+            <Border Style="{StaticResource Panel}" Margin="0,16,0,0">
+                <StackPanel Margin="16,0">
+                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="120" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource FactLabel}" Text="{l:Loc About_Cap1Label}" />
+                            <TextBlock Grid.Column="1" Style="{StaticResource FactValue}" Text="{l:Loc About_Cap1Value}" />
+                        </Grid>
+                    </Border>
+                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="120" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource FactLabel}" Text="{l:Loc About_Cap2Label}" />
+                            <TextBlock Grid.Column="1" Style="{StaticResource FactValue}" Text="{l:Loc About_Cap2Value}" />
+                        </Grid>
+                    </Border>
+                    <Border Padding="0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="120" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource FactLabel}" Text="{l:Loc About_Cap3Label}" />
+                            <TextBlock Grid.Column="1" Style="{StaticResource FactValue}" Text="{l:Loc About_Cap3Value}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- Licence -->
+            <ContentControl Style="{StaticResource Callout}" Tag="{StaticResource Ico.ShieldCheck}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="{l:Loc About_License}" FontWeight="SemiBold" />
+                    <TextBlock Margin="0,3,0,0" TextWrapping="Wrap" LineHeight="19" Foreground="{DynamicResource MutedBrush}">
+                        <Run Text="{l:Loc About_LicenseBody}" /><Hyperlink
+                            NavigateUri="https://www.gnu.org/licenses/gpl-3.0.html" RequestNavigate="OnNavigate"
+                            Foreground="{DynamicResource AccentTextBrush}">www.gnu.org/licenses/gpl-3.0.html</Hyperlink>
+                    </TextBlock>
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource T.Caption}" TextWrapping="Wrap" LineHeight="17"
+                               Text="{l:Loc About_Warranty}" />
+                </StackPanel>
+            </ContentControl>
+        </StackPanel>
 
         <!-- ═════════ Pied ═════════ -->
-        <Border Background="{DynamicResource HeaderBrush}" BorderBrush="{DynamicResource BorderBrush}"
-                BorderThickness="0,1,0,0" Padding="40,16">
+        <Border Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0" Padding="28,12">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                    <TextBlock x:Name="CopyrightText" FontFamily="{StaticResource Font.Sans}" FontSize="12.5"
-                               Foreground="{DynamicResource MutedBrush}" />
-                    <TextBlock Style="{StaticResource Kicker}" FontSize="9" Text="{l:Loc About_RightsReserved}" Margin="0,3,0,0" />
-                </StackPanel>
-                <Button Grid.Column="1" Content="{l:Loc Common_Close}" MinWidth="96" Padding="20,9"
-                        IsCancel="True" Click="OnClose" />
+                <TextBlock x:Name="CopyrightText" Style="{StaticResource T.Caption}" VerticalAlignment="Center" />
+                <Button HorizontalAlignment="Right" Content="{l:Loc Common_Close}" MinWidth="96"
+                        IsCancel="True" IsDefault="True" Click="OnClose" />
             </Grid>
         </Border>
     </StackPanel>

@@ -32,14 +32,16 @@ public sealed class IdentityDetailViewModel : ObservableObject
     private readonly AuditReadRepository _repo;
     private readonly long _runId;
     private readonly IdentityListItemViewModel _identity;
+    private readonly string _rootPath;
     private readonly int _total;
     private int _page;
 
-    public IdentityDetailViewModel(AuditReadRepository repo, long runId, IdentityListItemViewModel identity)
+    public IdentityDetailViewModel(AuditReadRepository repo, long runId, IdentityListItemViewModel identity, string rootPath)
     {
         _repo = repo;
         _runId = runId;
         _identity = identity;
+        _rootPath = rootPath;
         _total = repo.CountIdentityLocations(runId, identity.Identity);
 
         PrevPageCommand = new RelayCommand(() => GoToPage(_page - 1), () => _page > 0);
@@ -50,6 +52,8 @@ public sealed class IdentityDetailViewModel : ObservableObject
     // ── En-tête (relais depuis l'identité de la liste maître) ──
     public string Identity => _identity.Identity;
     public string TypeText => _identity.TypeText;
+    public bool HasTypeText => _identity.HasTypeText;
+    public bool IsGroupLike => _identity.IsGroupLike;
     public string PresentOnText => _identity.PresentOnText;
     public string MembersCountText => _identity.MembersCountText;
     public bool HasMembers => _identity.HasMembers;
@@ -100,7 +104,7 @@ public sealed class IdentityDetailViewModel : ObservableObject
         Locations.Clear();
         foreach (var row in _repo.GetIdentityLocations(_runId, _identity.Identity, _page * PageSize, PageSize))
         {
-            Locations.Add(new IdentityLocationViewModel(row));
+            Locations.Add(new IdentityLocationViewModel(row, _rootPath));
         }
         OnPropertyChanged(nameof(RangeText));
         PrevPageCommand.RaiseCanExecuteChanged();

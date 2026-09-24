@@ -2,22 +2,38 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:MAAT.App.Views"
+        xmlns:ui="clr-namespace:MAAT.App.Controls"
         xmlns:l="clr-namespace:MAAT.App.Localization"
         Title="{l:Loc Cfg_WinTitle}"
-        Width="820" MinWidth="720" SizeToContent="Height" ResizeMode="CanMinimize"
-        WindowStartupLocation="CenterOwner"
+        Width="760" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Icon="pack://application:,,,/MAAT.App;component/Assets/maat.ico"
-        Background="{DynamicResource BgBrush}">
+        Background="{DynamicResource SurfaceBrush}" Foreground="{DynamicResource TextBrush}"
+        FontFamily="{StaticResource Font.Sans}"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
     <DockPanel>
-        <!-- Barre de boutons -->
-        <Border DockPanel.Dock="Bottom" Background="{DynamicResource HeaderBrush}"
+        <!-- Pied : actions -->
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource Surface2Brush}"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="24,14">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Style="{StaticResource GhostButton}" Margin="0,0,10,0" Content="{l:Loc Common_Cancel}"
-                        IsCancel="True" Click="OnCancel" />
-                <Button Padding="22,10" Content="{l:Loc Cfg_Start}" Command="{Binding StartCommand}" />
-            </StackPanel>
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <ContentControl Style="{StaticResource Icon}" Tag="{StaticResource Ico.ShieldCheck}" Width="14" Height="14"
+                                    Foreground="{DynamicResource TertiaryBrush}" Margin="0,0,8,0" />
+                    <TextBlock Text="{l:Loc Cfg_ReadOnlyNote}" Style="{StaticResource T.Caption}" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource Btn.Secondary}" Content="{l:Loc Common_Cancel}" IsCancel="True" Click="OnCancel" />
+                    <Button Margin="8,0,0,0" Content="{l:Loc Cfg_Start}" ui:Ui.Icon="{StaticResource Ico.Play}"
+                            Command="{Binding StartCommand}" IsDefault="True" />
+                </StackPanel>
+            </Grid>
         </Border>
+
+        <!-- En-tête -->
+        <StackPanel DockPanel.Dock="Top" Margin="24,22,24,0">
+            <TextBlock Text="{l:Loc Cfg_Title}" Style="{StaticResource T.Title}" FontSize="18" />
+            <TextBlock Text="{l:Loc Cfg_Subtitle}" Style="{StaticResource T.Secondary}" Margin="0,4,0,0" TextWrapping="Wrap" />
+        </StackPanel>
 
         <views:ConfigView />
     </DockPanel>

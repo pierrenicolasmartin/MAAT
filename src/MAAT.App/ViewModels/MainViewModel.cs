@@ -7,6 +7,7 @@
 // any later version. This program is distributed WITHOUT ANY WARRANTY; see
 // the GNU General Public License <https://www.gnu.org/licenses/> for details.
 
+using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Windows;
 using MAAT.App.Localization;
@@ -50,6 +51,9 @@ public sealed class MainViewModel : ObservableObject
 
         _language = LocalizationManager.Parse(settings.Language);
         LocalizationManager.Instance.Apply(_language);
+
+        ClearRecentCommand = new RelayCommand(() => { Services.RecentProjects.Clear(); RefreshRecentProjects(); });
+        RefreshRecentProjects();
     }
 
     /// <summary>Demande d'ouverture du dialogue de configuration (gérée par la fenêtre).</summary>
@@ -69,25 +73,49 @@ public sealed class MainViewModel : ObservableObject
             var previous = _workspace;
             if (SetProperty(ref _workspace, value))
             {
-                if (previous is not null) { previous.PropertyChanged -= OnWorkspacePropertyChanged; }
-                if (_workspace is not null) { _workspace.PropertyChanged += OnWorkspacePropertyChanged; }
+                if (previous is not null)
+                {
+                    previous.PropertyChanged -= OnWorkspacePropertyChanged;
+                    previous.ProjectSaved -= OnProjectSaved;
+                }
+                if (_workspace is not null)
+                {
+                    _workspace.PropertyChanged += OnWorkspacePropertyChanged;
+                    _workspace.ProjectSaved += OnProjectSaved;
+                }
+                else
+                {
+                    RefreshRecentProjects(); // retour à l'accueil
+                }
                 OnPropertyChanged(nameof(HasWorkspace));
                 OnPropertyChanged(nameof(ShowEmptyState));
                 OnPropertyChanged(nameof(HasResults));
-                OnPropertyChanged(nameof(Greeting)); OnPropertyChanged(nameof(Tagline)); // retour à l'accueil
             }
         }
     }
 
+    /// <summary>Projets récents (écran d'accueil).</summary>
+    public ObservableCollection<RecentProjectViewModel> RecentProjects { get; } = new();
+    public bool HasRecentProjects => RecentProjects.Count > 0;
+    public RelayCommand ClearRecentCommand { get; }
+
+    /// <summary>Version affichée dans la barre d'état (« 1.3.0 »).</summary>
+    public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? string.Empty;
+
+    private void RefreshRecentProjects()
+    {
+        RecentProjects.Clear();
+        foreach (var p in Services.RecentProjects.Existing())
+        {
+            RecentProjects.Add(new RecentProjectViewModel(p, OpenProjectFile));
+        }
+        OnPropertyChanged(nameof(HasRecentProjects));
+    }
+
+    private void OnProjectSaved(string path) => Services.RecentProjects.Add(path);
+
     public bool HasWorkspace => _workspace is not null;
     public bool ShowEmptyState => _workspace is null;
-
-    /// <summary>Salutation d'accueil selon l'heure (1re ligne, plus grande). Recalculée
-    /// à chaque affichage de l'écran vide et au changement de langue.</summary>
-    public string Greeting => UserGreeting.Build();
-
-    /// <summary>Invitation à auditer (2e ligne, un peu plus petite).</summary>
-    public string Tagline => LocalizationManager.T("Empty_Title");
 
     /// <summary>Vrai quand un audit terminé (ou projet chargé) est disponible : active Export/Enregistrer.</summary>
     public bool HasResults => _workspace is { IsCompleted: true };
@@ -155,6 +183,7 @@ public sealed class MainViewModel : ObservableObject
             var db = AuditDatabase.Open(path);
             DiscardCurrentScan();
             Workspace = ScanViewModel.LoadProject(db);
+            Services.RecentProjects.Add(path);
         }
         catch (Exception ex)
         {
@@ -190,7 +219,6 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsLangAuto));
         OnPropertyChanged(nameof(IsLangFrench));
         OnPropertyChanged(nameof(IsLangEnglish));
-        OnPropertyChanged(nameof(Greeting)); OnPropertyChanged(nameof(Tagline)); // suit la langue
         var s = UserSettings.Load();
         s.Language = language.ToString();
         s.Save();

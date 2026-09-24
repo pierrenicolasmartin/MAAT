@@ -8,6 +8,7 @@
 // the GNU General Public License <https://www.gnu.org/licenses/> for details.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
@@ -28,6 +29,9 @@ public sealed class UserSettings
 
     /// <summary>Largeur (px) du panneau maître de l'explorateur de résultats (arbre / liste).</summary>
     public double ExplorerPaneWidth { get; set; } = 320;
+
+    /// <summary>Projets .maat récemment ouverts ou enregistrés (plus récent en tête).</summary>
+    public List<string> RecentProjects { get; set; } = new();
 
     /// <summary>Marqueur de mode portable : sa présence à côté de l'exécutable bascule le stockage en local.</summary>
     private const string PortableMarker = "MAAT.portable";

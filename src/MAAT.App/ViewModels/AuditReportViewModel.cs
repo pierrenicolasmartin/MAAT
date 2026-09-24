@@ -30,14 +30,22 @@ public sealed class AuditReportViewModel : ObservableObject
     private bool _showAll;
 
     public AuditReportViewModel(AuditSummary summary, IReadOnlyList<ScanLogEntry> log,
-        string suggestedName, string? totalSizeText)
+        string suggestedName, string? totalSizeText, DateTime? finishedAt = null)
     {
         _log = log;
         _suggestedName = suggestedName;
         RootPath = summary.RootPath;
-        AuditDate = DateTimeOffset.Now.ToString("dd/MM/yyyy HH:mm");
+        RootName = MAAT.App.Services.PathDisplay.RootName(summary.RootPath);
+        AuditDate = (finishedAt ?? DateTime.Now).ToString("dd/MM/yyyy HH:mm");
         FinishedText = L2("Rep_FinishedMeta", AuditDate);
         DurationText = L2("Rep_DurationMeta", FormatDuration(summary.Elapsed));
+
+        // ── Chiffres clés : ce que l'audit a effectivement couvert ──
+        Metrics = new List<ReportMetric> { new(L("Scan_Folders"), summary.FolderCount.ToString("N0")) };
+        if (summary.Parameters.AuditFiles) { Metrics.Add(new(L("Scan_Files"), summary.FileCount.ToString("N0"))); }
+        if (!string.IsNullOrEmpty(totalSizeText)) { Metrics.Add(new(L("Scan_TotalSize"), totalSizeText)); }
+        if (summary.Parameters.AuditRights) { Metrics.Add(new(L("Scan_Aces"), summary.AceTotal.ToString("N0"))); }
+        Metrics.Add(new(L("Rep_Duration"), FormatDuration(summary.Elapsed)));
 
         // ── Problèmes DÉDOUBLONNÉS par (motif, chemin) : un même dossier peut être signalé
         //    par les deux passes (tailles puis droits) ou par deux lectures (ACL et contenu).
@@ -101,6 +109,10 @@ public sealed class AuditReportViewModel : ObservableObject
     }
 
     public string RootPath { get; }
+    public string RootName { get; }
+
+    /// <summary>Chiffres clés (dossiers, fichiers, volumétrie, entrées, durée).</summary>
+    public List<ReportMetric> Metrics { get; }
     public string AuditDate { get; }
     public string FinishedText { get; }
     public string DurationText { get; }
@@ -185,6 +197,9 @@ public sealed class AuditReportViewModel : ObservableObject
 }
 
 /// <summary>Une tuile de la rangée de signaux (accès refusés, erreurs de lecture, jonctions, AD).</summary>
+/// <summary>Chiffre clé du rapport (libellé + valeur formatée).</summary>
+public sealed record ReportMetric(string Label, string Value);
+
 public sealed class SignalTile
 {
     public SignalTile(string? number, string title, string subtitle, string tone, string? icon = null)
@@ -237,14 +252,7 @@ public sealed class IssueRow
     public string SeverityText { get; }
 
     private static string RelativeToRoot(string path, string? root)
-    {
-        if (string.IsNullOrEmpty(root)) { return path; }
-        string r = root.TrimEnd('\\');
-        return path.Length > r.Length + 1 && path[r.Length] == '\\'
-               && path.StartsWith(r, StringComparison.OrdinalIgnoreCase)
-            ? "…" + path[r.Length..]
-            : path;
-    }
+        => string.IsNullOrEmpty(root) ? path : MAAT.App.Services.PathDisplay.Relative(path, root);
 
     /// <summary>Clé de catalogue (non localisée) du motif, pour regrouper et traduire.</summary>
     public static string CategoryKey(string code) => code switch

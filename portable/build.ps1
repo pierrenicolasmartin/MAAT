@@ -4,7 +4,7 @@
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-$version = '1.2.0'
+$version = '1.3.0'
 $name    = "MAAT-$version-portable-x64"
 $stage   = Join-Path 'build' $name
 $zip     = "$name.zip"

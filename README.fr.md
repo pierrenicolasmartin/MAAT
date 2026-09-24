@@ -8,17 +8,17 @@ arborescence, lit les **droits NTFS (ACL)** de chaque élément, calcule les **t
 et résout les **groupes Active Directory** (appartenances imbriquées), puis restitue
 le tout dans une interface interactive et des rapports exportables.
 
-> Statut : version 1.2.0 — fonctionnellement complète.
+> Statut : version 1.3.0 — fonctionnellement complète.
 > Licence : **GNU GPL v3**.
 
 ---
 
 ## Aperçu
 
-| <img src="docs/screenshots/fr_main_window.png" width="430"><br>**Fenêtre principale** (thèmes clair et sombre) | <img src="docs/screenshots/fr_audit_config.png" width="430"><br>**Configuration** d'un nouvel audit |
+| <img src="docs/screenshots/fr_main_window.png" width="430"><br>**Écran d'accueil** (thèmes clair et sombre), projets récents | <img src="docs/screenshots/fr_audit_config.png" width="430"><br>**Configuration** d'un nouvel audit |
 |:--:|:--:|
-| <img src="docs/screenshots/fr_audit_in_progress.png" width="430"><br>**Progression** en temps réel, avec estimation du temps restant | <img src="docs/screenshots/fr_audit_results_folders.png" width="430"><br>**Résultats — vue Dossiers** : arbre + détail des droits |
-| <img src="docs/screenshots/fr_audit_results_identities.png" width="430"><br>**Résultats — vue Identités** : emplacements et membres | <img src="docs/screenshots/fr_audit_summary.png" width="430"><br>**Rapport d'analyse** de l'audit |
+| <img src="docs/screenshots/fr_audit_in_progress.png" width="430"><br>**Progression** en temps réel, avec estimation du temps restant | <img src="docs/screenshots/fr_audit_results_folders.png" width="430"><br>**Résultats — vue Dossiers** : chiffres clés, couverture, arbre + droits |
+| <img src="docs/screenshots/fr_audit_results_identities.png" width="430"><br>**Résultats — vue Identités** : emplacements et membres | <img src="docs/screenshots/fr_audit_summary.png" width="430"><br>**Rapport d'analyse** : périmètre couvert, points d'attention, éléments non audités |
 | <img src="docs/screenshots/fr_html_export.png" width="430"><br>**Rapport HTML interactif** (autonome) | <img src="docs/screenshots/fr_user_guide.png" width="430"><br>**Guide d'utilisation** intégré |
 
 ### Icônes
@@ -40,16 +40,16 @@ proposés — un installeur MSI et un package portable sans installation :
 
 | Artefact | Description | VirusTotal |
 |---|---|:--:|
-| **`MAAT-1.2.0-x64.msi`** | Installeur (Windows x64, runtime .NET 8 inclus) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/13baa2698f6020c1df8d748c9846ceb05d3086c77a719c92a1c35f472d73e6aa) |
-| **`MAAT-1.2.0-portable-x64.zip`** | Package portable (sans installation) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/d2e202cbbf46aa08b73652cdba57a713432dbc4c3bbc831fae08bcc7778f477b) |
-| &nbsp;&nbsp;└ **`MAAT.exe`** | Exécutable portable (dans le ZIP) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/78e2bd2922ac5c5cdeff071b8a15c06c9f6a38d17dc7494627d0c6075bfcb35c) |
+| **`MAAT-1.3.0-x64.msi`** | Installeur (Windows x64, runtime .NET 8 inclus) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/9b7264d86923527a97a20f1da640d67abe1a8124a109873be3cb4606de766ac8) |
+| **`MAAT-1.3.0-portable-x64.zip`** | Package portable (sans installation) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/123dc59d69e718d0d6fa3d562f1b3b02ebf88aed7c34b11053a39c8742f2bcc7) |
+| &nbsp;&nbsp;└ **`MAAT.exe`** | Exécutable portable (dans le ZIP) | [![VirusTotal](https://img.shields.io/badge/VirusTotal-rapport-394eff?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/b5e965334536e5e91b8b0af0eaa26c6aaa4a169575e665d5ad4ff9976e20f5b2) |
 
 Intégrité — SHA-256 :
 
 ```
-13baa2698f6020c1df8d748c9846ceb05d3086c77a719c92a1c35f472d73e6aa  MAAT-1.2.0-x64.msi
-d2e202cbbf46aa08b73652cdba57a713432dbc4c3bbc831fae08bcc7778f477b  MAAT-1.2.0-portable-x64.zip
-78e2bd2922ac5c5cdeff071b8a15c06c9f6a38d17dc7494627d0c6075bfcb35c  MAAT.exe
+9b7264d86923527a97a20f1da640d67abe1a8124a109873be3cb4606de766ac8  MAAT-1.3.0-x64.msi
+123dc59d69e718d0d6fa3d562f1b3b02ebf88aed7c34b11053a39c8742f2bcc7  MAAT-1.3.0-portable-x64.zip
+b5e965334536e5e91b8b0af0eaa26c6aaa4a169575e665d5ad4ff9976e20f5b2  MAAT.exe
 ```
 
 ---
@@ -62,8 +62,9 @@ d2e202cbbf46aa08b73652cdba57a713432dbc4c3bbc831fae08bcc7778f477b  MAAT-1.2.0-por
 - **Résolution Active Directory** (optionnelle) : développement récursif des groupes
   avec détection de cycles ; annotation « (via *groupe*) » de l'appartenance indirecte.
   Dégradation propre hors domaine, sans dépendance au module RSAT.
-- **Interface moderne** (WPF, MVVM) : arbre virtualisé, recherche, filtres par type
-  de droit et par identité, thèmes clair / sombre, deux langues (FR / EN).
+- **Interface professionnelle** (WPF, MVVM) : système de design cohérent, arbre
+  virtualisé, recherche, filtres par type de droit et par identité, thèmes clair /
+  sombre accordés à Windows, raccourcis clavier, deux langues (FR / EN).
 - **Exports** : CSV et **rapport HTML interactif autonome** (un seul fichier, ouvrable
   dans n'importe quel navigateur, sans dépendance externe).
 - **Moteur en streaming** : énumération native, lecture ACL parallèle par lots,
@@ -109,7 +110,7 @@ Installeur MSI (nécessite [WiX Toolset v5](https://wixtoolset.org/)) :
 
 ```sh
 cd installer
-wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.2.0-x64.msi
+wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.3.0-x64.msi
 ```
 
 Package portable (sans installation, préférences stockées à côté de l'exécutable) :
@@ -145,6 +146,22 @@ consomment la base en streaming, sans jamais matérialiser l'ensemble en mémoir
 
 ## Journal des versions
 
+### 1.3.0
+- **Interface repensée** : nouveau système de design — palette neutre avec un seul
+  accent, une seule police pour toute l'interface, icônes vectorielles, composants
+  cohérents, contrastes WCAG AA ; thèmes clair et sombre, barre de titre Windows
+  accordée au thème.
+- **Écran d'accueil** : ce que MAAT analyse, engagement de lecture seule, projets récents.
+- **Explorateur de résultats** : en-tête d'audit avec chiffres clés et indicateur de
+  **couverture** (audit complet / éléments non audités), boutons Enregistrer et Exporter,
+  table des droits plus lisible (pastilles Autoriser / Refuser, droits explicites mis en
+  évidence), chemins relatifs à la racine auditée, recherche plus précise.
+- **Rapport d'analyse** : périmètre couvert, points d'attention, éléments non audités —
+  rouvrable à tout moment, y compris pour un projet enregistré.
+- **Raccourcis clavier** : Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+F, F1.
+- **Rapport HTML** aligné sur la nouvelle charte (clair / sombre).
+- Police serif retirée : un paquet plus léger.
+
 ### 1.2.0
 - **Audits plus fiables** : espaces de noms DFS suivis de façon transparente jusqu'à
   leur cible ; nouvelle tentative automatique sur les erreurs réseau passagères ;
@@ -178,7 +195,7 @@ consomment la base en streaming, sans jamais matérialiser l'ensemble en mémoir
 Ce programme est un logiciel libre, distribué sous les termes de la
 **GNU General Public License v3** — voir [LICENSE](LICENSE).
 
-Les composants tiers (runtime .NET, SQLite, polices Hanken Grotesk / Newsreader / Geist Mono)
+Les composants tiers (runtime .NET, SQLite, polices Hanken Grotesk / Geist Mono)
 et leurs licences sont décrits dans [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 
 Copyright (C) 2026 Pierre-Nicolas MARTIN.

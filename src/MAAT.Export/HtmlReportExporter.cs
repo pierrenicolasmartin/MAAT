@@ -258,6 +258,7 @@ public sealed class HtmlReportExporter
             .Replace("@@T_BRAND@@", He("H_Brand"))
             .Replace("@@T_SUBTITLE@@", He("H_Subtitle"))
             .Replace("@@T_THEME_TOGGLE@@", He("H_ThemeToggle"))
+            .Replace("@@COLON@@", _lang == "en" ? ": " : " : ") // « Profondeur : … » en français, « Depth: … » en anglais
             .Replace("@@T_DEPTH@@", He("H_Depth"))
             .Replace("@@T_MODE@@", He("H_Mode"))
             .Replace("@@T_CONTENT@@", He("H_Content"))
@@ -290,7 +291,7 @@ public sealed class HtmlReportExporter
             ("members", "J_Members"), ("type", "J_Type"), ("rights", "J_Rights"), ("scope", "J_Scope"),
             ("inheritance", "J_Inheritance"), ("source", "J_Source"), ("explicit", "J_Explicit"),
             ("inherited", "J_Inherited"), ("explicitTip", "J_ExplicitTip"), ("aclTip", "J_AclToggleTip"),
-            ("aceEntries", "J_AceEntries"), ("idGroups", "J_IdentitiesGroups"), ("clickExplore", "J_ClickExplore"),
+            ("aceEntries", "J_AceEntries"), ("hideFiles", "J_HideFiles"), ("showFiles", "J_ShowFiles"), ("idGroups", "J_IdentitiesGroups"), ("clickExplore", "J_ClickExplore"),
             ("totalId", "J_TotalIdentities"), ("noGroup", "J_NoGroup"), ("directUsers", "J_DirectUsers"),
             ("result", "J_Result"), ("results", "J_Results"), ("member", "J_Member"), ("members2", "J_Members2"),
             ("adGroups", "J_AdGroups"), ("csvMember", "J_CsvMember"), ("csvNbFolders", "J_CsvNbFolders"),

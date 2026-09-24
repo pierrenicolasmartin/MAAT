@@ -9,10 +9,7 @@
 
 using System;
 using System.ComponentModel;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
 using MAAT.App.ViewModels;
 using MAAT.App.Views;
 
@@ -22,8 +19,6 @@ namespace MAAT.App;
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm = new();
-    private bool _greetingStarted; // l'intro d'accueil ne se joue qu'une fois, au lancement
-    private bool _greetingDone;
 
     public MainWindow()
     {
@@ -32,7 +27,6 @@ public partial class MainWindow : Window
         _vm.NewAuditRequested += OnNewAuditRequested;
         _vm.AboutRequested += () => new AboutWindow { Owner = this }.ShowDialog();
         _vm.GuideRequested += () => new GuideWindow { Owner = this }.ShowDialog();
-        _vm.PropertyChanged += OnVmPropertyChanged;
 
         // Fichier .maat double-cliqué (association) : ouverture au démarrage.
         Loaded += (_, _) =>
@@ -121,114 +115,4 @@ public partial class MainWindow : Window
         base.OnClosed(e);
     }
 
-    // ───────── Animation d'accueil (curseur clignotant → frappe → virgule) ─────────
-
-    /// <summary>Salutation sans la virgule finale (la virgule est dessinée par le morph).</summary>
-    private string GreetingWord()
-    {
-        string g = (_vm.Greeting ?? string.Empty).TrimEnd();
-        if (g.EndsWith(",", StringComparison.Ordinal)) { g = g[..^1].TrimEnd(); }
-        return g;
-    }
-
-    private async void OnGreetingLoaded(object sender, RoutedEventArgs e)
-    {
-        if (_greetingStarted) { return; } // une seule fois, au démarrage
-        _greetingStarted = true;
-        await PlayGreetingIntroAsync();
-    }
-
-    private async Task PlayGreetingIntroAsync()
-    {
-        GreetingText.Text = string.Empty;
-
-        // 1) Curseur clignotant (3 cycles ~0,5 s) avant que quoi que ce soit ne s'écrive.
-        await BlinkCursorAsync(3);
-        GreetingCursor.BeginAnimation(UIElement.OpacityProperty, null);
-        GreetingCursor.Opacity = 1;
-
-        // 2) Frappe lettre par lettre, rythme volontairement irrégulier.
-        var rnd = new Random();
-        foreach (char c in GreetingWord())
-        {
-            GreetingText.Text += c;
-            int delay = rnd.Next(90, 221);                          // base 90–220 ms
-            if (rnd.Next(3) == 0) { delay += rnd.Next(130, 401); }  // ~1/3 : hésitation +130–400 ms
-            await Task.Delay(delay);
-        }
-
-        // 3) Courte pause, puis métamorphose du curseur en virgule.
-        await Task.Delay(480);
-        await MorphCursorToCommaAsync();
-
-        // 4) Révélation de la tagline en fondu.
-        GreetingTagline.BeginAnimation(UIElement.OpacityProperty,
-            new DoubleAnimation(0, 1, new Duration(TimeSpan.FromSeconds(0.5))));
-
-        _greetingDone = true;
-    }
-
-    /// <summary>
-    /// Fait clignoter le curseur un nombre fixe de cycles. Le clignotement est
-    /// <b>instantané</b> (allumé/éteint sec, comme un vrai caret) grâce à des images
-    /// clés discrètes ; seule sa disparition finale (au morph) se fait en fondu.
-    /// </summary>
-    private Task BlinkCursorAsync(int cycles)
-    {
-        var tcs = new TaskCompletionSource<bool>();
-        var blink = new DoubleAnimationUsingKeyFrames
-        {
-            Duration = new Duration(TimeSpan.FromSeconds(0.8)),
-            RepeatBehavior = new RepeatBehavior(cycles),
-        };
-        blink.KeyFrames.Add(new DiscreteDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        blink.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.4))));
-        blink.KeyFrames.Add(new DiscreteDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.8))));
-        blink.Completed += (_, _) => tcs.TrySetResult(true);
-        GreetingCursor.BeginAnimation(UIElement.OpacityProperty, blink);
-        return tcs.Task;
-    }
-
-    /// <summary>
-    /// Storyboard combiné : le curseur pivote, descend et disparaît, tandis que la
-    /// virgule apparaît en fondu + zoom élastique (BackEase) à la même place.
-    /// </summary>
-    private Task MorphCursorToCommaAsync()
-    {
-        var tcs = new TaskCompletionSource<bool>();
-        var dur = new Duration(TimeSpan.FromSeconds(0.34));
-        var sb = new Storyboard();
-
-        void Add(AnimationTimeline a, DependencyObject target, DependencyProperty prop)
-        {
-            Storyboard.SetTarget(a, target);
-            Storyboard.SetTargetProperty(a, new PropertyPath(prop));
-            sb.Children.Add(a);
-        }
-
-        // Curseur : rotation ~22°, descente, fondu en sortie.
-        Add(new DoubleAnimation(0, 22, dur), GreetingCursorRotate, RotateTransform.AngleProperty);
-        Add(new DoubleAnimation(0, 6, dur), GreetingCursorTranslate, TranslateTransform.YProperty);
-        Add(new DoubleAnimation(1, 0, new Duration(TimeSpan.FromSeconds(0.22))), GreetingCursor, UIElement.OpacityProperty);
-
-        // Virgule : fondu + zoom 0,5 → 1 avec rebond élastique.
-        var back = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.5 };
-        var begin = TimeSpan.FromSeconds(0.08);
-        Add(new DoubleAnimation(0, 1, dur) { BeginTime = begin }, GreetingComma, UIElement.OpacityProperty);
-        Add(new DoubleAnimation(0.5, 1, dur) { BeginTime = begin, EasingFunction = back }, GreetingCommaScale, ScaleTransform.ScaleXProperty);
-        Add(new DoubleAnimation(0.5, 1, dur) { BeginTime = begin, EasingFunction = back }, GreetingCommaScale, ScaleTransform.ScaleYProperty);
-
-        sb.Completed += (_, _) => tcs.TrySetResult(true);
-        sb.Begin();
-        return tcs.Task;
-    }
-
-    private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        // Après l'intro, garder la salutation synchrone avec la langue (sans rejouer l'anim).
-        if (_greetingDone && e.PropertyName == nameof(MainViewModel.Greeting))
-        {
-            GreetingText.Text = GreetingWord();
-        }
-    }
 }

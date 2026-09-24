@@ -4,153 +4,276 @@
         xmlns:views="clr-namespace:MAAT.App.Views"
         xmlns:vm="clr-namespace:MAAT.App.ViewModels"
         xmlns:l="clr-namespace:MAAT.App.Localization"
+        xmlns:ui="clr-namespace:MAAT.App.Controls"
         Title="{l:Loc Win_Title}"
-        Height="760" Width="1040" MinHeight="560" MinWidth="780"
+        Height="820" Width="1320" MinHeight="600" MinWidth="980"
         WindowStartupLocation="CenterScreen"
         Icon="pack://application:,,,/MAAT.App;component/Assets/maat.ico"
-        Background="{DynamicResource BgBrush}"
+        Background="{DynamicResource BgBrush}" Foreground="{DynamicResource TextBrush}"
+        FontFamily="{StaticResource Font.Sans}"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <DataTemplate DataType="{x:Type vm:ScanViewModel}">
             <views:ScanView />
         </DataTemplate>
+
+        <!-- Ligne cliquable (projets récents) -->
+        <Style x:Key="RowButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="Transparent" CornerRadius="6" Padding="10,8">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource Surface3Brush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Pastille d'icône (écran d'accueil) -->
+        <Style x:Key="IconTile" TargetType="Border">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+        </Style>
     </Window.Resources>
 
-    <DockPanel>
-        <!-- ===== Barre de menu ===== -->
-        <Menu DockPanel.Dock="Top" Padding="8,3" Background="{DynamicResource HeaderBrush}">
-            <MenuItem Header="{l:Loc Menu_File}">
-                <MenuItem Header="{l:Loc Menu_NewAudit}" Command="{Binding NewAuditCommand}" />
-                <MenuItem Header="{l:Loc Menu_OpenProject}" Command="{Binding OpenProjectCommand}" />
-                <Separator />
-                <MenuItem Header="{l:Loc Menu_ExportTo}" IsEnabled="{Binding HasResults}">
-                    <MenuItem Header="{l:Loc Menu_ExportHtml}" Command="{Binding Workspace.ExportHtmlCommand}" />
-                    <MenuItem Header="{l:Loc Menu_ExportCsv}" Command="{Binding Workspace.ExportCsvCommand}" />
-                </MenuItem>
-                <MenuItem Header="{l:Loc Menu_SaveProject}" IsEnabled="{Binding HasResults}"
-                          Command="{Binding Workspace.SaveProjectCommand}" />
-                <Separator />
-                <MenuItem Header="{l:Loc Menu_Quit}" Command="{Binding ExitCommand}" />
-            </MenuItem>
-            <MenuItem Header="{l:Loc Menu_Preferences}">
-                <MenuItem Header="{l:Loc Menu_Display}">
-                    <MenuItem Header="{l:Loc Menu_ThemeAuto}" IsCheckable="True" IsChecked="{Binding IsThemeAuto, Mode=OneWay}"
-                              Command="{Binding ThemeAutoCommand}" />
-                    <Separator />
-                    <MenuItem Header="{l:Loc Menu_ThemeLight}" IsCheckable="True" IsChecked="{Binding IsThemeLight, Mode=OneWay}"
-                              Command="{Binding ThemeLightCommand}" />
-                    <MenuItem Header="{l:Loc Menu_ThemeDark}" IsCheckable="True" IsChecked="{Binding IsThemeDark, Mode=OneWay}"
-                              Command="{Binding ThemeDarkCommand}" />
-                </MenuItem>
-                <MenuItem Header="{l:Loc Menu_Language}">
-                    <MenuItem Header="{l:Loc Menu_LangAuto}" IsCheckable="True" IsChecked="{Binding IsLangAuto, Mode=OneWay}"
-                              Command="{Binding LanguageAutoCommand}" />
-                    <Separator />
-                    <MenuItem Header="Français" IsCheckable="True" IsChecked="{Binding IsLangFrench, Mode=OneWay}"
-                              Command="{Binding LanguageFrenchCommand}" />
-                    <MenuItem Header="English" IsCheckable="True" IsChecked="{Binding IsLangEnglish, Mode=OneWay}"
-                              Command="{Binding LanguageEnglishCommand}" />
-                </MenuItem>
-            </MenuItem>
-            <MenuItem Header="{l:Loc Menu_Help}">
-                <MenuItem Header="{l:Loc Menu_Guide}" Command="{Binding GuideCommand}" />
-                <Separator />
-                <MenuItem Header="{l:Loc Menu_About}" Command="{Binding AboutCommand}" />
-            </MenuItem>
-        </Menu>
+    <Window.InputBindings>
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewAuditCommand}" />
+        <KeyBinding Key="O" Modifiers="Control" Command="{Binding OpenProjectCommand}" />
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding Workspace.SaveProjectCommand}" />
+        <KeyBinding Key="F1" Command="{Binding GuideCommand}" />
+    </Window.InputBindings>
 
-        <!-- ===== En-tête : mot-symbole, plat, filet inférieur ===== -->
-        <Border DockPanel.Dock="Top" Background="{DynamicResource HeaderBrush}"
-                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,1" Padding="24,12">
-            <Grid>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source="{DynamicResource LogoSymbolImage}" Width="22" Height="22"
-                           RenderOptions.BitmapScalingMode="HighQuality" />
-                    <TextBlock Text="MAÂT" FontFamily="{DynamicResource Font.Serif}" FontSize="17" FontWeight="SemiBold"
-                               TextOptions.TextFormattingMode="Ideal"
-                               VerticalAlignment="Center" Margin="7,0,0,0" Foreground="{DynamicResource TextBrush}" />
-                    <Border Width="1" Height="16" Background="{DynamicResource BorderStrongBrush}" Margin="14,0" />
-                    <TextBlock Text="{l:Loc Header_Subtitle}" FontSize="12.5" VerticalAlignment="Center"
-                               Foreground="{DynamicResource MutedBrush}" />
-                </StackPanel>
-                <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Label}"
-                           Text="{l:Loc Header_Tag}" />
-            </Grid>
+    <DockPanel>
+        <!-- ═════════ Barre d'application : marque + menus ═════════ -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Height="44" Padding="16,0,12,0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Image Source="{DynamicResource LogoSymbolImage}" Width="20" Height="20"
+                       RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center" />
+                <TextBlock Text="MAÂT" FontSize="14" FontWeight="Bold" Margin="7,0,0,0" VerticalAlignment="Center" />
+                <Border Style="{StaticResource VDivider}" Height="18" Margin="14,0,8,0" VerticalAlignment="Center" />
+                <Menu VerticalAlignment="Center">
+                    <MenuItem Header="{l:Loc Menu_File}">
+                        <MenuItem Header="{l:Loc Menu_NewAudit}" Command="{Binding NewAuditCommand}" InputGestureText="Ctrl+N" />
+                        <MenuItem Header="{l:Loc Menu_OpenProject}" Command="{Binding OpenProjectCommand}" InputGestureText="Ctrl+O" />
+                        <Separator />
+                        <MenuItem Header="{l:Loc Menu_SaveProject}" IsEnabled="{Binding HasResults}"
+                                  Command="{Binding Workspace.SaveProjectCommand}" InputGestureText="Ctrl+S" />
+                        <MenuItem Header="{l:Loc Menu_ExportTo}" IsEnabled="{Binding HasResults}">
+                            <MenuItem Header="{l:Loc Menu_ExportHtml}" Command="{Binding Workspace.ExportHtmlCommand}" />
+                            <MenuItem Header="{l:Loc Menu_ExportCsv}" Command="{Binding Workspace.ExportCsvCommand}" />
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="{l:Loc Menu_Quit}" Command="{Binding ExitCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="{l:Loc Menu_Preferences}">
+                        <MenuItem Header="{l:Loc Menu_Display}">
+                            <MenuItem Header="{l:Loc Menu_ThemeAuto}" IsCheckable="True" IsChecked="{Binding IsThemeAuto, Mode=OneWay}"
+                                      Command="{Binding ThemeAutoCommand}" />
+                            <Separator />
+                            <MenuItem Header="{l:Loc Menu_ThemeLight}" IsCheckable="True" IsChecked="{Binding IsThemeLight, Mode=OneWay}"
+                                      Command="{Binding ThemeLightCommand}" />
+                            <MenuItem Header="{l:Loc Menu_ThemeDark}" IsCheckable="True" IsChecked="{Binding IsThemeDark, Mode=OneWay}"
+                                      Command="{Binding ThemeDarkCommand}" />
+                        </MenuItem>
+                        <MenuItem Header="{l:Loc Menu_Language}">
+                            <MenuItem Header="{l:Loc Menu_LangAuto}" IsCheckable="True" IsChecked="{Binding IsLangAuto, Mode=OneWay}"
+                                      Command="{Binding LanguageAutoCommand}" />
+                            <Separator />
+                            <MenuItem Header="Français" IsCheckable="True" IsChecked="{Binding IsLangFrench, Mode=OneWay}"
+                                      Command="{Binding LanguageFrenchCommand}" />
+                            <MenuItem Header="English" IsCheckable="True" IsChecked="{Binding IsLangEnglish, Mode=OneWay}"
+                                      Command="{Binding LanguageEnglishCommand}" />
+                        </MenuItem>
+                    </MenuItem>
+                    <MenuItem Header="{l:Loc Menu_Help}">
+                        <MenuItem Header="{l:Loc Menu_Guide}" Command="{Binding GuideCommand}" InputGestureText="F1" />
+                        <Separator />
+                        <MenuItem Header="{l:Loc Menu_About}" Command="{Binding AboutCommand}" />
+                    </MenuItem>
+                </Menu>
+            </StackPanel>
         </Border>
 
-        <!-- ===== Pied de page ===== -->
-        <Border DockPanel.Dock="Bottom" Background="{DynamicResource HeaderBrush}"
-                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="24,9">
-            <Grid>
+        <!-- ═════════ Barre d'état ═════════ -->
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Height="28" Padding="16,0">
+            <Grid VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <!-- Message d'action : clippé à la colonne, avec un fondu en fin si trop long -->
-                <TextBlock Grid.Column="0" Style="{StaticResource Muted}" Text="{Binding Workspace.ActionMessage}"
-                           TextWrapping="NoWrap" VerticalAlignment="Center" Margin="0,0,18,0">
-                    <TextBlock.OpacityMask>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Color="#FF000000" Offset="0" />
-                            <GradientStop Color="#FF000000" Offset="0.92" />
-                            <GradientStop Color="#00000000" Offset="1" />
-                        </LinearGradientBrush>
-                    </TextBlock.OpacityMask>
-                </TextBlock>
-                <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11.5"
-                           Foreground="{DynamicResource TertiaryBrush}" Text="{l:Loc Footer_Copyright}" />
+                <TextBlock Grid.Column="0" Style="{StaticResource T.Caption}" Text="{Binding Workspace.ActionMessage}"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,24,0" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ContentControl Style="{StaticResource Icon}" Tag="{StaticResource Ico.Lock}" Width="12" Height="12"
+                                    Foreground="{DynamicResource TertiaryBrush}" Margin="0,0,6,0" />
+                    <TextBlock Style="{StaticResource T.Caption}" Text="{l:Loc Status_ReadOnly}" VerticalAlignment="Center" />
+                    <Border Style="{StaticResource VDivider}" Height="12" Margin="12,0" />
+                    <TextBlock Style="{StaticResource T.Caption}" VerticalAlignment="Center">
+                        <Run Text="MAAT" /><Run Text=" " /><Run Text="{Binding AppVersion, Mode=OneWay}" />
+                    </TextBlock>
+                </StackPanel>
             </Grid>
         </Border>
 
-        <!-- ===== Corps : espace vide ou espace de travail ===== -->
-        <Grid Margin="0">
-            <!-- État vide : accueil sobre -->
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="720"
-                        Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVis}}">
-                <!-- Salutation animée : curseur clignotant → frappe lettre par lettre → virgule -->
-                <StackPanel x:Name="GreetingLine" Orientation="Horizontal" HorizontalAlignment="Center"
-                            Loaded="OnGreetingLoaded">
-                    <TextBlock x:Name="GreetingText" FontFamily="{StaticResource Font.Serif}" FontSize="36"
-                               Foreground="{DynamicResource TextBrush}" TextOptions.TextFormattingMode="Ideal"
-                               VerticalAlignment="Center" />
-                    <!-- Curseur (I-beam) et virgule superposés, à la suite du texte -->
-                    <Grid VerticalAlignment="Center" Margin="2,0,0,0">
-                        <Rectangle x:Name="GreetingCursor" Width="1.3" Height="30" Opacity="0"
-                                   HorizontalAlignment="Left" VerticalAlignment="Center"
-                                   Fill="{DynamicResource TextBrush}" RenderTransformOrigin="0.5,0.85">
-                            <Rectangle.RenderTransform>
-                                <TransformGroup>
-                                    <RotateTransform x:Name="GreetingCursorRotate" Angle="0" />
-                                    <TranslateTransform x:Name="GreetingCursorTranslate" Y="0" />
-                                </TransformGroup>
-                            </Rectangle.RenderTransform>
-                        </Rectangle>
-                        <TextBlock x:Name="GreetingComma" Text="," FontFamily="{StaticResource Font.Serif}" FontSize="52"
-                                   Foreground="{DynamicResource TextBrush}" TextOptions.TextFormattingMode="Ideal"
-                                   HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0"
-                                   RenderTransformOrigin="0.5,0.5">
-                            <TextBlock.RenderTransform>
-                                <TransformGroup>
-                                    <ScaleTransform x:Name="GreetingCommaScale" ScaleX="0.5" ScaleY="0.5" />
-                                    <TranslateTransform Y="-2" />
-                                </TransformGroup>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                    </Grid>
-                </StackPanel>
-                <TextBlock x:Name="GreetingTagline" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
-                           FontFamily="{StaticResource Font.Serif}" FontSize="29" Foreground="{DynamicResource TextBrush}"
-                           TextOptions.TextFormattingMode="Ideal" Margin="0,12,0,0" Opacity="0" Text="{Binding Tagline, Mode=OneWay}" />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,32,0,0">
-                    <Button Content="{l:Loc Btn_NewAudit}" FontSize="15" Padding="26,13" Margin="0,0,12,0" Command="{Binding NewAuditCommand}" />
-                    <Button Content="{l:Loc Btn_OpenProject}" Style="{StaticResource GhostButton}" FontSize="15" Padding="26,13"
-                            Command="{Binding OpenProjectCommand}" />
-                </StackPanel>
-            </StackPanel>
+        <!-- ═════════ Corps ═════════ -->
+        <Grid>
+            <!-- ───── Écran d'accueil ───── -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False"
+                          Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVis}}">
+                <Grid MaxWidth="1080" Margin="56,64,56,48" HorizontalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="420" />
+                        <ColumnDefinition Width="48" />
+                        <ColumnDefinition Width="340" />
+                    </Grid.ColumnDefinitions>
 
-            <!-- Espace de travail (scan / résultats) -->
-            <ContentControl Content="{Binding Workspace}"
+                    <!-- Présentation + actions -->
+                    <StackPanel Grid.Column="0">
+                        <Image Source="{DynamicResource LogoSymbolImage}" Width="40" Height="40" HorizontalAlignment="Left"
+                               RenderOptions.BitmapScalingMode="HighQuality" Margin="-4,0,0,20" />
+                        <TextBlock Text="{l:Loc Home_Title}" FontSize="28" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   TextOptions.TextFormattingMode="Ideal" />
+                        <TextBlock Text="{l:Loc Home_Subtitle}" FontSize="15" Foreground="{DynamicResource MutedBrush}"
+                                   TextWrapping="Wrap" MaxWidth="600" HorizontalAlignment="Left" Margin="0,10,0,0" LineHeight="23" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,28,0,0">
+                            <Button MinHeight="38" Padding="16,0" FontSize="14" Command="{Binding NewAuditCommand}"
+                                    Content="{l:Loc Btn_NewAudit}" ui:Ui.Icon="{StaticResource Ico.Plus}" />
+                            <Button Style="{StaticResource Btn.Secondary}" MinHeight="38" Padding="16,0" Margin="10,0,0,0" FontSize="14"
+                                    Command="{Binding OpenProjectCommand}" Content="{l:Loc Btn_OpenProject}" ui:Ui.Icon="{StaticResource Ico.FolderOpen}" />
+                        </StackPanel>
+
+                        <!-- Ce que MAAT analyse -->
+                        <TextBlock Text="{l:Loc Home_Capabilities}" Style="{StaticResource T.Label}" Margin="0,48,0,10" />
+                        <Border Style="{StaticResource Panel}">
+                            <StackPanel>
+                                <Grid Margin="16,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ContentControl Style="{StaticResource Icon}" Tag="{StaticResource Ico.Key}" Foreground="{DynamicResource AccentTextBrush}" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                                        <TextBlock Text="{l:Loc Home_CapRightsTitle}" Style="{StaticResource T.Section}" />
+                                        <TextBlock Text="{l:Loc Home_CapRightsText}" Style="{StaticResource T.Secondary}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" />
+                                <Grid Margin="16,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ContentControl Style="{StaticResource Icon}" Tag="{StaticResource Ico.Drive}" Foreground="{DynamicResource AccentTextBrush}" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                                        <TextBlock Text="{l:Loc Home_CapSizeTitle}" Style="{StaticResource T.Section}" />
+                                        <TextBlock Text="{l:Loc Home_CapSizeText}" Style="{StaticResource T.Secondary}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" />
+                                <Grid Margin="16,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ContentControl Style="{StaticResource Icon}" Tag="{StaticResource Ico.Users}" Foreground="{DynamicResource AccentTextBrush}" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                                        <TextBlock Text="{l:Loc Home_CapAdTitle}" Style="{StaticResource T.Section}" />
+                                        <TextBlock Text="{l:Loc Home_CapAdText}" Style="{StaticResource T.Secondary}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Engagement de confiance -->
+                        <Grid Margin="2,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ContentControl Style="{StaticResource Icon}" Tag="{StaticResource Ico.ShieldCheck}" Width="14" Height="14"
+                                            Foreground="{DynamicResource TertiaryBrush}" VerticalAlignment="Top" Margin="0,1,8,0" />
+                            <TextBlock Grid.Column="1" Text="{l:Loc Home_Trust}" Style="{StaticResource T.Caption}" TextWrapping="Wrap" />
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Projets récents -->
+                    <Border Grid.Column="2" Style="{StaticResource Panel}" VerticalAlignment="Top" Margin="0,60,0,0">
+                        <DockPanel>
+                            <Grid DockPanel.Dock="Top" Margin="16,12,12,8">
+                                <TextBlock Text="{l:Loc Home_Recent}" Style="{StaticResource T.Section}" VerticalAlignment="Center" />
+                                <Button Style="{StaticResource LinkButton}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        Command="{Binding ClearRecentCommand}" FontSize="12" Content="{l:Loc Home_RecentClear}"
+                                        Visibility="{Binding HasRecentProjects, Converter={StaticResource BoolToVis}}" />
+                            </Grid>
+                            <Grid Margin="6,0,6,8">
+                                <ItemsControl ItemsSource="{Binding RecentProjects}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource RowButton}" Command="{Binding OpenCommand}" ToolTip="{Binding FullPath}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <ContentControl Style="{StaticResource Icon}" Tag="{StaticResource Ico.File}" VerticalAlignment="Top"
+                                                                    Margin="0,1,10,0" Foreground="{DynamicResource TertiaryBrush}" />
+                                                    <StackPanel Grid.Column="1">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding DateText}" Style="{StaticResource T.Caption}" Margin="10,0,0,0" />
+                                                        </Grid>
+                                                        <TextBlock Text="{Binding Folder}" Style="{StaticResource T.Caption}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{l:Loc Home_RecentEmpty}" TextWrapping="Wrap" Margin="10,2,10,8">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource T.Caption}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasRecentProjects}" Value="False">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- ───── Espace de travail (résultats) ───── -->
+            <ContentControl Content="{Binding Workspace}" Focusable="False"
                             Visibility="{Binding HasWorkspace, Converter={StaticResource BoolToVis}}" />
         </Grid>
     </DockPanel>

@@ -76,6 +76,9 @@ public sealed class AceLineViewModel : ObservableObject, IDisposable
     public bool HasMoreMembers => HiddenMemberCount > 0;
     public string MoreMembersText => LocalizationManager.T("Ace_MoreMembers", HiddenMemberCount);
 
+    /// <summary>Lien d'ouverture de la liste des membres : « 12 membres ».</summary>
+    public string MembersLinkText => LocalizationManager.T("Scan_MembersN", MemberList.Count);
+
     /// <summary>Libellé du panneau de membres : « Membres · IDENTITÉ (N) ».</summary>
     public string MembersPanelLabel =>
         $"{LocalizationManager.T("Ace_MembersLabel")} · {Identity} ({MemberList.Count})";

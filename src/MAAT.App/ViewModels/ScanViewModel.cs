@@ -96,9 +96,34 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ActionMessage));
         OnPropertyChanged(nameof(ParametersText));
         OnPropertyChanged(nameof(SearchPlaceholder));
+        OnPropertyChanged(nameof(CompletenessText));
     }
 
     public string RootPath => _parameters.RootPath;
+
+    /// <summary>Nom court de la racine auditée (titre de l'espace de travail).</summary>
+    public string RootName => Services.PathDisplay.RootName(_parameters.RootPath);
+
+    // ── Complétude (indicateur de l'en-tête → rapport d'analyse) ──
+    private int _issueCount;
+    private AuditRunRow? _run;
+    private IReadOnlyList<ScanLogEntry>? _storedLog;
+
+    /// <summary>Éléments non audités (problèmes dédoublonnés, comme dans le rapport).</summary>
+    public int IssueCount { get => _issueCount; private set { if (SetProperty(ref _issueCount, value)) { OnPropertyChanged(nameof(HasIssues)); OnPropertyChanged(nameof(CompletenessText)); } } }
+    public bool HasIssues => _issueCount > 0;
+    public string CompletenessText => _issueCount > 0
+        ? LocalizationManager.T(_issueCount > 1 ? "Ws_IssuesN" : "Ws_Issues1", _issueCount.ToString("N0"))
+        : LocalizationManager.T("Ws_Complete");
+
+    private void ComputeCompleteness()
+    {
+        try { IssueCount = BuildReport().IssueCount; }
+        catch { IssueCount = 0; }
+    }
+
+    /// <summary>Relatif à la racine (« Partages\Finance\Paie »).</summary>
+    public string Relative(string path) => Services.PathDisplay.Relative(path, _parameters.RootPath);
     public AuditParameters Parameters => _parameters;
 
     /// <summary>Résumé lisible des paramètres (affiché pendant et après le traitement).</summary>
@@ -216,6 +241,13 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
     public string SelectedFolderPath { get => _selFolderPath; private set => SetProperty(ref _selFolderPath, value); }
     public string SelectedFolderSummary { get => _selFolderSummary; private set => SetProperty(ref _selFolderSummary, value); }
 
+    private string _selFolderRelPath = string.Empty;
+    private bool _selIsFile;
+
+    /// <summary>Chemin de l'élément sélectionné, relatif à la racine auditée.</summary>
+    public string SelectedFolderRelativePath { get => _selFolderRelPath; private set => SetProperty(ref _selFolderRelPath, value); }
+    public bool SelectedIsFile { get => _selIsFile; private set => SetProperty(ref _selIsFile, value); }
+
     // -- Vue Identités : liste + identité sélectionnée --
     /// <summary>Toutes les identités de l'audit (source non filtrée de <see cref="Identities"/>).</summary>
     private readonly List<IdentityListItemViewModel> _allIdentities = new();
@@ -231,7 +263,7 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
             {
                 OnPropertyChanged(nameof(HasSelectedIdentity));
                 SelectedIdentityDetail = value is not null && _repo is not null
-                    ? new IdentityDetailViewModel(_repo, _runId, value)
+                    ? new IdentityDetailViewModel(_repo, _runId, value, _parameters.RootPath)
                     : null;
             }
         }
@@ -261,6 +293,8 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
 
         SelectedFolderName = _selectedNode.Name;
         SelectedFolderPath = _selectedNode.FullPath;
+        SelectedFolderRelativePath = Relative(_selectedNode.FullPath);
+        SelectedIsFile = _selectedNode.IsFile;
 
         int inh = 0, exp = 0;
         if (ShowRightsStat)
@@ -279,7 +313,7 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
             parts.Add(LocalizationManager.T("Scan_AceEntries", SelectedAcl.Count));
             parts.Add($"{LocalizationManager.T("Scan_InheritedN", inh)} · {LocalizationManager.T("Scan_ExplicitN", exp)}");
         }
-        SelectedFolderSummary = string.Join("  │  ", parts);
+        SelectedFolderSummary = string.Join("   ·   ", parts);
 
         // États : ACL illisible, contenu non listable… et « aucune ACE » quand les droits
         // ont été lus mais qu'aucune entrée n'est retenue (DACL vide ou filtre d'identités).
@@ -433,8 +467,36 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
     /// non audités). À n'appeler qu'après un scan terminé (<see cref="Summary"/> non nul).
     /// </summary>
     public AuditReportViewModel BuildReport()
-        => new(Summary!, _log.Snapshot(), SuggestName(),
-               _parameters.AuditSize ? StatSizeText : null);
+    {
+        // Audit de la session : synthèse et journal en mémoire. Projet rouvert : synthèse
+        // reconstituée depuis l'enregistrement de l'audit et journal relu dans la base.
+        if (Summary is not null)
+        {
+            return new(Summary, _log.Snapshot(), SuggestName(),
+                       _parameters.AuditSize ? StatSizeText : null, _auditStamp.Add(Summary.Elapsed));
+        }
+        var log = _storedLog ??= _repo?.GetLog() ?? Array.Empty<ScanLogEntry>();
+        var run = _run!;
+        var summary = new AuditSummary
+        {
+            Parameters = _parameters,
+            RootPath = run.RootPath,
+            Elapsed = TimeSpan.FromMilliseconds(run.ElapsedMs),
+            FolderCount = run.FolderCount,
+            FileCount = run.FileCount,
+            ItemCount = run.ItemCount,
+            AceTotal = run.AceTotal,
+            ReparseCount = run.ReparseCount,
+            DfsLinkCount = _repo?.CountItemsWithFlag(_runId, MAAT.Core.Models.ItemFlags.DfsLink) ?? 0,
+            CycleCount = log.Count(e => e.Type == "ENUM_BOUCLE"),
+            AccessBasedEnumeration = log.Any(e => e.Type == "PARTAGE_ABE"),
+            AclErrorCount = run.AclErrors,
+            AdErrorCount = run.AdErrors,
+            AdAvailable = run.AdAvailable,
+        };
+        var finished = (run.FinishedUtc ?? run.StartedUtc).ToLocalTime().DateTime;
+        return new(summary, log, SuggestName(), _parameters.AuditSize ? StatSizeText : null, finished);
+    }
 
     /// <summary>Temps restant estimé (vide tant qu'indéterminable).</summary>
     public string EtaText { get => _etaText; private set { if (SetProperty(ref _etaText, value)) { UpdateTiming(); } } }
@@ -506,6 +568,7 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
             LoadTree();
             PopulateStats(summary.FolderCount, summary.FileCount, summary.AceTotal);
             IsCompleted = true;
+            ComputeCompleteness();
         }
         catch (OperationCanceledException)
         {
@@ -728,7 +791,7 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
             return;
         }
         _runId = run.Id;
-        _treeContext = new TreeContext { Repo = _repo };
+        _treeContext = new TreeContext { Repo = _repo, RootPath = _parameters.RootPath };
         var root = _repo.GetRoot(run.Id);
         if (root is not null)
         {
@@ -804,6 +867,7 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
     private void InitializeFromExisting(AuditDatabase db, AuditRunRow run)
     {
         _db = db;
+        _run = run;
         IsSaved = true; // déjà un fichier projet
         LoadTree();     // renseigne _repo, _runId et l'arbre
         PopulateStats(run.FolderCount, run.FileCount, run.AceTotal);
@@ -817,6 +881,7 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
         StepIndeterminate = false;
         IsRunning = false;
         IsCompleted = true;
+        ComputeCompleteness();
     }
 
     private static string BuildSummaryFromRun(AuditRunRow s)
@@ -829,6 +894,9 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
         parts.Add($"{s.ElapsedMs / 1000.0:N1} s");
         return string.Join("  ·  ", parts);
     }
+
+    /// <summary>Projet enregistré (chemin du fichier .maat) : alimente les projets récents.</summary>
+    public event Action<string>? ProjectSaved;
 
     private void SaveProject()
     {
@@ -853,6 +921,7 @@ public sealed class ScanViewModel : ObservableObject, IDisposable
             {
                 IsSaved = true;
                 SetAction("Msg_Saved", Services.PathDisplay.Strip(path));
+                ProjectSaved?.Invoke(path);
             }
         }
     }

@@ -136,6 +136,8 @@ public static class ExportStrings
         ["J_User"] = "Utilisateur",
         ["J_Group"] = "Groupe",
         ["J_Folder"] = "dossier",
+        ["J_HideFiles"] = "Masquer les fichiers",
+        ["J_ShowFiles"] = "Afficher les fichiers",
         ["J_NoMember"] = "(aucun membre)",
     };
 
@@ -240,6 +242,8 @@ public static class ExportStrings
         ["J_User"] = "User",
         ["J_Group"] = "Group",
         ["J_Folder"] = "folder",
+        ["J_HideFiles"] = "Hide files",
+        ["J_ShowFiles"] = "Show files",
         ["J_NoMember"] = "(no member)",
     };
 }

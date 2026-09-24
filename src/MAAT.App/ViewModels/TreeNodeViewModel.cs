@@ -18,6 +18,9 @@ namespace MAAT.App.ViewModels;
 public sealed class TreeContext
 {
     public required AuditReadRepository Repo { get; init; }
+
+    /// <summary>Racine auditée : les résultats de recherche s'affichent relativement à elle.</summary>
+    public string RootPath { get; init; } = string.Empty;
 }
 
 /// <summary>Sentinelle d'enfant non chargé (affichée « Chargement… » avant dépliage).</summary>
@@ -62,8 +65,12 @@ public sealed class TreeNodeViewModel : ObservableObject, IDisposable
     public string Name => _row.Name;
     public string FullPath => _row.FullPath;
 
-    /// <summary>Libellé affiché : nom en mode arbre, chemin complet en mode recherche.</summary>
-    public string Label => _leaf ? _row.FullPath : _row.Name;
+    /// <summary>
+    /// Libellé affiché : nom en mode arbre ; en mode recherche, chemin relatif à la racine
+    /// (« Partages\Finance\Paie ») — un chemin complet commencerait par le même long préfixe
+    /// pour tous les résultats et serait tronqué avant la partie utile.
+    /// </summary>
+    public string Label => _leaf ? MAAT.App.Services.PathDisplay.Relative(_row.FullPath, _ctx.RootPath) : _row.Name;
 
     /// <summary>Terme de recherche à surligner dans le libellé (null hors recherche).</summary>
     public string? HighlightTerm { get; }

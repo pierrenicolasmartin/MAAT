@@ -1,73 +1,93 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- ════════════════════════════════════════════════════════════
-         MAAT — Thème INK (sombre)
-         Encre chaude near-black, accent terracotta. Mêmes CLÉS que Paper.
+         MAAT 1.3 — Palette SOMBRE
+         Gris encre neutres, surfaces étagées par la luminosité (pas par
+         les ombres), accent lapis éclairci pour le contraste AA.
+         Mêmes CLÉS que Light.xaml.
          ════════════════════════════════════════════════════════════ -->
 
-    <!-- ── Fond / surfaces ── -->
-    <Color x:Key="BgColor">#14130D</Color>
-    <Color x:Key="CardColor">#1D1B14</Color>
-    <Color x:Key="Card2Color">#26231B</Color>
-    <Color x:Key="BorderColor">#332E20</Color>
-    <Color x:Key="BorderStrongColor">#4A4330</Color>
-    <Color x:Key="HeaderColor">#1A1810</Color>
+    <!-- ── Surfaces ── -->
+    <Color x:Key="BgColor">#0F1115</Color>
+    <Color x:Key="SurfaceColor">#161920</Color>
+    <Color x:Key="Surface2Color">#1A1E26</Color>
+    <Color x:Key="Surface3Color">#232833</Color>
+    <Color x:Key="BorderColor">#272C36</Color>
+    <Color x:Key="BorderStrongColor">#3A414E</Color>
 
     <!-- ── Texte ── -->
-    <Color x:Key="TextColor">#EDE8D9</Color>
-    <Color x:Key="MutedColor">#A8A18E</Color>
-    <Color x:Key="TertiaryColor">#75705F</Color>
-    <Color x:Key="HeaderTextColor">#EDE8D9</Color>
+    <Color x:Key="TextColor">#E7EAEF</Color>
+    <Color x:Key="MutedColor">#A5ADBA</Color>
+    <Color x:Key="TertiaryColor">#7E8796</Color>
+    <Color x:Key="OnAccentColor">#FFFFFF</Color>
+    <Color x:Key="TooltipBgColor">#2A303C</Color>
+    <Color x:Key="TooltipTextColor">#EEF1F5</Color>
 
-    <!-- ── Accent unique + fonctionnels ── -->
-    <Color x:Key="AccentColor">#DA8459</Color>
-    <Color x:Key="AccentHoverColor">#E69770</Color>
-    <Color x:Key="AccentPressedColor">#BF6E45</Color>
-    <Color x:Key="AccentTintColor">#38281C</Color>
-    <Color x:Key="AccentColor2">#DA8459</Color>
-    <Color x:Key="VioletColor">#DA8459</Color>
-    <Color x:Key="GreenColor">#A0B57E</Color>
-    <Color x:Key="DenyColor">#DA9080</Color>
-    <Color x:Key="AmberColor">#D6A64C</Color>
-    <Color x:Key="SelectionColor">#38281C</Color>
+    <!-- ── Accent : remplissages (texte blanc AA) ; AccentText pour liens et texte ── -->
+    <Color x:Key="AccentColor">#3F72DB</Color>
+    <Color x:Key="AccentHoverColor">#4C7FE6</Color>
+    <Color x:Key="AccentPressedColor">#3463C4</Color>
+    <Color x:Key="AccentTintColor">#1A2436</Color>
+    <Color x:Key="AccentTint2Color">#22314D</Color>
+    <Color x:Key="AccentTextColor">#8FB2F6</Color>
 
-    <!-- ── Brosses unies ── -->
-    <SolidColorBrush x:Key="CardBrush" Color="{StaticResource CardColor}" />
-    <SolidColorBrush x:Key="Card2Brush" Color="{StaticResource Card2Color}" />
+    <!-- ── Sémantique ── -->
+    <Color x:Key="SuccessColor">#55C48B</Color>
+    <Color x:Key="SuccessTintColor">#14271E</Color>
+    <Color x:Key="DangerColor">#F2806F</Color>
+    <Color x:Key="DangerTintColor">#2E1A18</Color>
+    <Color x:Key="WarningColor">#E6AF52</Color>
+    <Color x:Key="WarningTintColor">#2B2313</Color>
+    <Color x:Key="WarningMarkColor">#E6AF52</Color>
+
+    <!-- ── Brosses ── -->
+    <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="Surface2Brush" Color="{StaticResource Surface2Color}" />
+    <SolidColorBrush x:Key="Surface3Brush" Color="{StaticResource Surface3Color}" />
     <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
     <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BorderStrongColor}" />
     <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}" />
     <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource MutedColor}" />
     <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource TertiaryColor}" />
+    <SolidColorBrush x:Key="OnAccentBrush" Color="{StaticResource OnAccentColor}" />
+    <SolidColorBrush x:Key="TooltipBgBrush" Color="{StaticResource TooltipBgColor}" />
+    <SolidColorBrush x:Key="TooltipTextBrush" Color="{StaticResource TooltipTextColor}" />
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-    <SolidColorBrush x:Key="Accent2Brush" Color="{StaticResource AccentColor2}" />
-    <SolidColorBrush x:Key="VioletBrush" Color="{StaticResource VioletColor}" />
     <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}" />
     <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource AccentPressedColor}" />
     <SolidColorBrush x:Key="AccentTintBrush" Color="{StaticResource AccentTintColor}" />
-    <SolidColorBrush x:Key="GreenBrush" Color="{StaticResource GreenColor}" />
-    <SolidColorBrush x:Key="DenyBrush" Color="{StaticResource DenyColor}" />
-    <SolidColorBrush x:Key="AmberBrush" Color="{StaticResource AmberColor}" />
-    <SolidColorBrush x:Key="SelectionBrush" Color="{StaticResource SelectionColor}" />
-    <SolidColorBrush x:Key="HeaderTextBrush" Color="{StaticResource HeaderTextColor}" />
+    <SolidColorBrush x:Key="AccentTint2Brush" Color="{StaticResource AccentTint2Color}" />
+    <SolidColorBrush x:Key="AccentTextBrush" Color="{StaticResource AccentTextColor}" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="SuccessTintBrush" Color="{StaticResource SuccessTintColor}" />
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+    <SolidColorBrush x:Key="DangerTintBrush" Color="{StaticResource DangerTintColor}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+    <SolidColorBrush x:Key="WarningTintBrush" Color="{StaticResource WarningTintColor}" />
+    <SolidColorBrush x:Key="WarningMarkBrush" Color="{StaticResource WarningMarkColor}" />
+    <SolidColorBrush x:Key="FocusRingBrush" Color="#703F72DB" />
+    <SolidColorBrush x:Key="SuccessBorderBrush" Color="#24503A" />
+    <SolidColorBrush x:Key="DangerBorderBrush" Color="#5A2E28" />
+    <SolidColorBrush x:Key="WarningBorderBrush" Color="#5A4620" />
+    <SolidColorBrush x:Key="AccentBorderBrush" Color="#2D4574" />
 
-    <SolidColorBrush x:Key="FocusRingBrush" Color="#66DA8459" />
+    <!-- ── Ombres ── -->
+    <DropShadowEffect x:Key="ShadowPopup" Color="#000000" BlurRadius="28" ShadowDepth="8" Direction="270" Opacity="0.50" />
+    <DropShadowEffect x:Key="ShadowRaised" Color="#000000" BlurRadius="3" ShadowDepth="1" Direction="270" Opacity="0.35" />
 
-    <!-- ── Brosses « façade » des anciens dégradés : PLATES ── -->
-    <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}" />
-    <SolidColorBrush x:Key="HeaderBrush" Color="{StaticResource HeaderColor}" />
-    <SolidColorBrush x:Key="AccentGradientBrush" Color="{StaticResource AccentColor}" />
-    <SolidColorBrush x:Key="AccentGradientHoverBrush" Color="{StaticResource AccentHoverColor}" />
-    <SolidColorBrush x:Key="CardGradientBrush" Color="{StaticResource CardColor}" />
+    <!-- ── Alias historiques ── -->
+    <SolidColorBrush x:Key="CardBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="Card2Brush" Color="{StaticResource Surface2Color}" />
+    <SolidColorBrush x:Key="HeaderBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="HeaderTextBrush" Color="{StaticResource TextColor}" />
+    <SolidColorBrush x:Key="GreenBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="DenyBrush" Color="{StaticResource DangerColor}" />
+    <SolidColorBrush x:Key="AmberBrush" Color="{StaticResource WarningMarkColor}" />
+    <SolidColorBrush x:Key="SelectionBrush" Color="{StaticResource AccentTintColor}" />
     <SolidColorBrush x:Key="ProgressBrush" Color="{StaticResource AccentColor}" />
-    <SolidColorBrush x:Key="ProgressGreenBrush" Color="{StaticResource GreenColor}" />
-
-    <!-- ── Glows neutralisés ── -->
-    <DropShadowEffect x:Key="GlowAccent" Color="#000000" BlurRadius="0" ShadowDepth="0" Opacity="0" />
-    <DropShadowEffect x:Key="GlowCyan" Color="#000000" BlurRadius="0" ShadowDepth="0" Opacity="0" />
-    <DropShadowEffect x:Key="GlowViolet" Color="#000000" BlurRadius="0" ShadowDepth="0" Opacity="0" />
-    <DropShadowEffect x:Key="GlowGreen" Color="#000000" BlurRadius="0" ShadowDepth="0" Opacity="0" />
-    <DropShadowEffect x:Key="GlowSoft" Color="#000000" BlurRadius="28" ShadowDepth="6" Opacity="0.45" />
+    <SolidColorBrush x:Key="ProgressGreenBrush" Color="{StaticResource SuccessColor}" />
+    <DropShadowEffect x:Key="GlowSoft" Color="#000000" BlurRadius="28" ShadowDepth="8" Direction="270" Opacity="0.50" />
 
     <!-- Logos pour fond sombre : versions BLANCHES (« light ») -->
     <BitmapImage x:Key="LogoTexteImage" UriSource="pack://application:,,,/MAAT.App;component/Assets/logo_texte_light.png" />

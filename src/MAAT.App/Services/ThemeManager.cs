@@ -47,6 +47,7 @@ public static class ThemeManager
             dicts.Add(palette);
         }
         Current = theme;
+        TitleBarTheme.ApplyAll(); // barre de titre native accordée au thème
     }
 
     public static AppTheme Toggle()
