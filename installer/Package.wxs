@@ -8,8 +8,8 @@
 
   <Package Name="MAAT"
            Manufacturer="Pierre-Nicolas MARTIN"
-           Version="1.3.0.0"
-           ProductCode="CAF4E034-7C33-401A-9C49-AB945E02705B"
+           Version="1.3.1.0"
+           ProductCode="174C7A91-A502-4A77-AA58-B91460DB21D9"
            UpgradeCode="B2A4F7C0-3D1E-4A9B-9C2F-7E6D5A1B0C34"
            Scope="perMachine"
            Language="$(ProductLang)"

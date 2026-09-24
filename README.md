@@ -8,7 +8,7 @@ the **NTFS permissions (ACLs)** of every item, computes **sizes** and resolves
 **Active Directory groups** (nested memberships), then presents everything in an
 interactive interface and exportable reports.
 
-> Status: version 1.3.0 — feature-complete.
+> Status: version 1.3.1 — feature-complete.
 > License: **GNU GPL v3**.
 
 ---
@@ -107,7 +107,7 @@ MSI installer (requires [WiX Toolset v5](https://wixtoolset.org/)):
 
 ```sh
 cd installer
-wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.3.0-x64.msi
+wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.3.1-x64.msi
 ```
 
 Portable package (no installation, settings stored next to the executable):
@@ -142,6 +142,12 @@ the UI reads the database with pagination for a virtualized tree, and the export
 consume the database in streaming, without ever materializing the whole set in memory.
 
 ## Changelog
+
+### 1.3.1
+- **Executable no longer compressed internally**: the single-file build used to hide the
+  application inside a compressed block, which one heuristic antivirus engine mistook for
+  a packed binary (false positive on `MAAT.exe` 1.3.0). The application components are now
+  stored as-is and readable by scanners; the ZIP and the MSI remain compressed.
 
 ### 1.3.0
 - **Redesigned interface**: a new design system — cool neutral palette with a single

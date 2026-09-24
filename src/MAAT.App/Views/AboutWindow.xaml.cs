@@ -22,7 +22,7 @@ public partial class AboutWindow : Window
         InitializeComponent();
 
         var asm = Assembly.GetExecutingAssembly();
-        string version = asm.GetName().Version?.ToString(3) ?? "1.3.0";
+        string version = asm.GetName().Version?.ToString(3) ?? "1.3.1";
         VersionBadge.Content = Localization.LocalizationManager.T("About_Version", version);
 
         // Copyright (« © <année> <auteur> ») fourni par l'attribut d'assembly,

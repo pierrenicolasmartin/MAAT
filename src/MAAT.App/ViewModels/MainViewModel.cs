@@ -99,7 +99,7 @@ public sealed class MainViewModel : ObservableObject
     public bool HasRecentProjects => RecentProjects.Count > 0;
     public RelayCommand ClearRecentCommand { get; }
 
-    /// <summary>Version affichée dans la barre d'état (« 1.3.0 »).</summary>
+    /// <summary>Version affichée dans la barre d'état (« 1.3.1 »).</summary>
     public string AppVersion => typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? string.Empty;
 
     private void RefreshRecentProjects()

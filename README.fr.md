@@ -8,7 +8,7 @@ arborescence, lit les **droits NTFS (ACL)** de chaque élément, calcule les **t
 et résout les **groupes Active Directory** (appartenances imbriquées), puis restitue
 le tout dans une interface interactive et des rapports exportables.
 
-> Statut : version 1.3.0 — fonctionnellement complète.
+> Statut : version 1.3.1 — fonctionnellement complète.
 > Licence : **GNU GPL v3**.
 
 ---
@@ -110,7 +110,7 @@ Installeur MSI (nécessite [WiX Toolset v5](https://wixtoolset.org/)) :
 
 ```sh
 cd installer
-wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.3.0-x64.msi
+wix build Package.wxs -ext WixToolset.UI.wixext -o MAAT-1.3.1-x64.msi
 ```
 
 Package portable (sans installation, préférences stockées à côté de l'exécutable) :
@@ -145,6 +145,13 @@ SQLite ; l'interface lit la base en pagination pour un arbre virtualisé, et les
 consomment la base en streaming, sans jamais matérialiser l'ensemble en mémoire.
 
 ## Journal des versions
+
+### 1.3.1
+- **Exécutable sans compression interne** : la publication en fichier unique masquait
+  l'application dans un bloc compressé, pris pour un binaire « packé » par un antivirus
+  heuristique (faux positif sur `MAAT.exe` 1.3.0). Les composants de l'application sont
+  désormais stockés tels quels et lisibles par les analyseurs ; le ZIP et le MSI restent
+  compressés.
 
 ### 1.3.0
 - **Interface repensée** : nouveau système de design — palette neutre avec un seul
